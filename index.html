@@ -37,6 +37,28 @@
   .data-table tbody th { font-weight:500; color:var(--text); background:transparent; }
   td.cheapest { background:#ecfdf5; color:#047857; font-weight:600; }
   td.priciest { background:#fef2f2; color:#b91c1c; font-weight:600; }
+  .signal-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+                 gap:12px; margin-bottom:16px; }
+  .signal-card { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+                 padding:14px 16px; }
+  .signal-head { display:flex; justify-content:space-between; align-items:center;
+                 margin-bottom:8px; }
+  .signal-name { font-size:12px; color:var(--muted); font-weight:500; letter-spacing:0.02em; }
+  .signal-pill { display:inline-block; padding:2px 8px; border:1px solid; border-radius:3px;
+                 font-size:10px; font-weight:600; letter-spacing:0.02em; }
+  .signal-headline { font-size:15px; font-weight:600; color:var(--text); margin-bottom:6px;
+                     font-variant-numeric:tabular-nums; }
+  .signal-detail { font-size:11px; color:var(--muted); line-height:1.5; margin:6px 0 0; }
+  .signal-tickers { margin-top:8px; }
+  .ticker { display:inline-block; padding:1px 7px; background:#eef2f7; color:var(--accent);
+            border-radius:3px; font-size:10px; font-weight:600; margin-right:4px;
+            font-family:'SF Mono',ui-monospace,monospace; }
+  .notes-block { background:#fafafa; border-left:3px solid var(--accent); padding:14px 18px;
+                 border-radius:0 6px 6px 0; margin-top:12px; }
+  .notes-title { font-size:12px; font-weight:600; color:var(--accent); margin-bottom:8px;
+                 letter-spacing:0.02em; }
+  .notes-block p { margin:6px 0; font-size:13px; line-height:1.6; color:var(--text); }
+  .notes-block strong { color:var(--accent); font-weight:600; }
   td.up { color:var(--up); font-weight:600; }
   td.down { color:var(--down); font-weight:600; }
   td.muted, .muted { color:var(--muted); }
@@ -52,11 +74,75 @@
 </style></head><body>
 
 <header>
-  <h1>GPU 云租金追踪 <span class="pill">v0.3 · 每日</span></h1>
-  <div class="sub">2026-05-08 快照 · 6 provider 公开 API/页面 · 投资信号面板将在 v0.4 上线</div>
+  <h1>GPU 云租金追踪 <span class="pill">v0.4 · 信号面板</span></h1>
+  <div class="sub">2026-05-08 快照 · 6 provider 公开 API/页面 · 累积 1 天历史</div>
 </header>
 
 <div class="cards"><div class="card"><div class="label">观察点</div><div class="val">394</div></div><div class="card"><div class="label">Provider</div><div class="val">6</div></div><div class="card"><div class="label">GPU 型号</div><div class="val">19</div></div><div class="card"><div class="label">H100 SXM 中位 (on-demand)</div><div class="val">$2.97/hr</div></div><div class="card"><div class="label">B200 中位 (on-demand)</div><div class="val">$5.50/hr</div></div></div>
+
+
+<section>
+  <h2>★ Investment Signal Dashboard</h2>
+  <div class="signal-grid">
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">Hopper 需求强度</span>
+            <span class="signal-pill" style="color:#6b7280;background:#f3f4f6;border-color:#d1d5db">稳定 ·</span>
+          </div>
+          <div class="signal-headline">$2.99/hr 中位</div>
+          
+          <div class="signal-detail">Lambda/Crusoe/Nebius/RunPod H100 SXM on-demand 中位 — 价格回落代表 Hopper 需求软化</div>
+          <div class="signal-tickers"><span class="ticker">NVDA</span></div>
+        </div>
+        
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">Blackwell ramp</span>
+            <span class="signal-pill" style="color:#6b7280;background:#f3f4f6;border-color:#d1d5db">稳定 ·</span>
+          </div>
+          <div class="signal-headline">3 provider · +92% vs H100</div>
+          
+          <div class="signal-detail">B200 在 3 家 institutional 上线 · 相对 H100 溢价收窄即 ramp 加速</div>
+          <div class="signal-tickers"><span class="ticker">NVDA</span></div>
+        </div>
+        
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">AMD 竞争</span>
+            <span class="signal-pill" style="color:#6b7280;background:#f3f4f6;border-color:#d1d5db">稳定 ·</span>
+          </div>
+          <div class="signal-headline">MI300X $1.99 · vs H100 折价 30%</div>
+          
+          <div class="signal-detail">MI300X 相对 H100 折价收窄 → AMD 议价能力上升 / 折价扩大 → 仍以便宜替代定位</div>
+          <div class="signal-tickers"><span class="ticker">AMD</span></div>
+        </div>
+        
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">Neocloud 利润</span>
+            <span class="signal-pill" style="color:#6b7280;background:#f3f4f6;border-color:#d1d5db">稳定 ·</span>
+          </div>
+          <div class="signal-headline">高端 $4.04 · 普通 $2.95 · 价差 +37%</div>
+          
+          <div class="signal-detail">Lambda/Crusoe (高端) vs RunPod/Nebius (commodity) H100 价差 — 价差扩大 = 高端议价能力强</div>
+          <div class="signal-tickers"><span class="ticker">CRWV</span> <span class="ticker">NBIS</span></div>
+        </div>
+        
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">Prosumer 算力</span>
+            <span class="signal-pill" style="color:#6b7280;background:#f3f4f6;border-color:#d1d5db">稳定 ·</span>
+          </div>
+          <div class="signal-headline">4090 $0.40 · 5090 $0.60</div>
+          
+          <div class="signal-detail">Vast.ai 全球 4090/5090 中位 — 价格上涨可能反映中国/亚太本地 AI 抢算力</div>
+          <div class="signal-tickers"><span class="ticker">NVDA</span></div>
+        </div>
+        </div>
+  <div class="notes-block"><div class="notes-title">📝 Investment Notes (自动生成)</div><p>**NVDA**: Hopper 需求 稳定 ($2.99/hr 中位)，Blackwell 稳定 (3 provider · +92% vs H100) — 等更长时间窗才能定方向。</p><p>**AMD**: MI300X $1.99 · vs H100 折价 30% — 折价中位档，无方向性信号。</p></div>
+  <p class="hint" style="color:#b45309;background:#fffbeb;padding:8px 12px;border:1px solid #fde68a;border-radius:6px;margin-top:8px;">⚠️ 当前仅 1 天历史，30D/7D 趋势需要 ≥7 天数据才会显示方向 (绿/红)。今日所有信号默认 "稳定" 不代表无方向，只是窗口不够。</p>
+</section>
+
 
 <section>
   <h2>① 跨 provider 对比 — On-Demand (单卡 $/hr 中位数)</h2>
@@ -90,6 +176,16 @@
 <p class="hint">Discount = (on-demand − spot) / on-demand. 越大说明 spot 越便宜，市场越宽松；越小说明现货供不应求。</p>
 
 </section>
+
+
+<section>
+  <h2>④ 30/90 天趋势 — 数据累积中</h2>
+  <div class="empty">
+    当前历史: <b>1 天</b><br>
+    sparkline 趋势图将在累积到 3 天后自动出现，30D 信号 delta 在 7 天后激活。
+  </div>
+</section>
+
 
 <footer>
   数据来源:

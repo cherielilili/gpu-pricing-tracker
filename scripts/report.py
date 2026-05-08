@@ -206,6 +206,86 @@ def spot_vs_ondemand_table(rows: list[dict]) -> str:
 """
 
 
+LEVEL_PILL = {
+    "tightening": ('color:#047857;background:#ecfdf5;border-color:#a7f3d0', "积极 ↑"),
+    "stable":     ('color:#6b7280;background:#f3f4f6;border-color:#d1d5db', "稳定 ·"),
+    "softening":  ('color:#b91c1c;background:#fef2f2;border-color:#fecaca', "走软 ↓"),
+    "n/a":        ('color:#9ca3af;background:#fafafa;border-color:#e5e7eb', "数据不足"),
+}
+
+
+def signal_dashboard_html(signals: list[dict], notes: list[str], n_days: int) -> str:
+    if not signals:
+        return ""
+    cards = []
+    for s in signals:
+        style, label = LEVEL_PILL.get(s["level"], LEVEL_PILL["n/a"])
+        delta_html = (
+            f'<div style="font-size:11px;color:#6b7280;margin-top:4px;">{s["delta"]}</div>'
+            if s.get("delta") else ""
+        )
+        tickers = " ".join(f'<span class="ticker">{t}</span>' for t in (s.get("tickers") or []))
+        cards.append(f"""
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">{s['name']}</span>
+            <span class="signal-pill" style="{style}">{label}</span>
+          </div>
+          <div class="signal-headline">{s['headline']}</div>
+          {delta_html}
+          <div class="signal-detail">{s['detail']}</div>
+          <div class="signal-tickers">{tickers}</div>
+        </div>
+        """)
+    notes_html = ""
+    if notes:
+        notes_html = (
+            '<div class="notes-block"><div class="notes-title">📝 Investment Notes (自动生成)</div>'
+            + "".join(f'<p>{n}</p>' for n in notes)
+            + "</div>"
+        )
+    history_warning = (
+        '<p class="hint" style="color:#b45309;background:#fffbeb;padding:8px 12px;'
+        'border:1px solid #fde68a;border-radius:6px;margin-top:8px;">'
+        f'⚠️ 当前仅 {n_days} 天历史，30D/7D 趋势需要 ≥7 天数据才会显示方向 (绿/红)。'
+        '今日所有信号默认 "稳定" 不代表无方向，只是窗口不够。</p>'
+        if n_days < 7 else ""
+    )
+    return f"""
+<section>
+  <h2>★ Investment Signal Dashboard</h2>
+  <div class="signal-grid">{''.join(cards)}</div>
+  {notes_html}
+  {history_warning}
+</section>
+"""
+
+
+def trend_section_html(n_days: int) -> str:
+    """Placeholder until ≥3 days of data accumulate. After that, render
+    inline-SVG sparklines per GPU. Building infrastructure here so it
+    activates automatically as data grows."""
+    if n_days < 3:
+        return f"""
+<section>
+  <h2>④ 30/90 天趋势 — 数据累积中</h2>
+  <div class="empty">
+    当前历史: <b>{n_days} 天</b><br>
+    sparkline 趋势图将在累积到 3 天后自动出现，30D 信号 delta 在 7 天后激活。
+  </div>
+</section>
+"""
+    # P5: render real sparklines. For now return placeholder.
+    return f"""
+<section>
+  <h2>④ 30/90 天趋势</h2>
+  <div class="empty">
+    历史 {n_days} 天 — sparkline 渲染将在 P5 上线（目前累积中）。
+  </div>
+</section>
+"""
+
+
 def cards_block(rows: list[dict], date: str) -> str:
     n_obs = len(rows)
     providers = sorted({r["provider"] for r in rows})
@@ -237,17 +317,27 @@ def cards_block(rows: list[dict], date: str) -> str:
 
 
 def main() -> int:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import signals as sig
+
     rows = load()
     if not rows:
         print("no observations — abort")
         return 1
     today_iso = datetime.now().strftime("%Y-%m-%d")
-    today_in_data = sorted({r["date"] for r in rows})[-1]
+    all_dates = sorted({r["date"] for r in rows})
+    today_in_data = all_dates[-1]
     today_rows = [r for r in rows if r["date"] == today_in_data]
+    n_days = len(all_dates)
 
     REPORTS_DIR.mkdir(exist_ok=True)
     out_path = REPORTS_DIR / f"{today_in_data}_gpu_pricing.html"
 
+    signals = sig.all_signals()
+    notes = sig.investment_notes(signals) if signals else []
+    dashboard = signal_dashboard_html(signals, notes, n_days)
+    trend = trend_section_html(n_days)
     cross_od = cross_provider_table(today_rows, "on_demand")
     cross_spot = cross_provider_table(today_rows, "spot")
     spread = spot_vs_ondemand_table(today_rows)
@@ -292,6 +382,28 @@ def main() -> int:
   .data-table tbody th {{ font-weight:500; color:var(--text); background:transparent; }}
   td.cheapest {{ background:#ecfdf5; color:#047857; font-weight:600; }}
   td.priciest {{ background:#fef2f2; color:#b91c1c; font-weight:600; }}
+  .signal-grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+                 gap:12px; margin-bottom:16px; }}
+  .signal-card {{ background:var(--surface); border:1px solid var(--border); border-radius:6px;
+                 padding:14px 16px; }}
+  .signal-head {{ display:flex; justify-content:space-between; align-items:center;
+                 margin-bottom:8px; }}
+  .signal-name {{ font-size:12px; color:var(--muted); font-weight:500; letter-spacing:0.02em; }}
+  .signal-pill {{ display:inline-block; padding:2px 8px; border:1px solid; border-radius:3px;
+                 font-size:10px; font-weight:600; letter-spacing:0.02em; }}
+  .signal-headline {{ font-size:15px; font-weight:600; color:var(--text); margin-bottom:6px;
+                     font-variant-numeric:tabular-nums; }}
+  .signal-detail {{ font-size:11px; color:var(--muted); line-height:1.5; margin:6px 0 0; }}
+  .signal-tickers {{ margin-top:8px; }}
+  .ticker {{ display:inline-block; padding:1px 7px; background:#eef2f7; color:var(--accent);
+            border-radius:3px; font-size:10px; font-weight:600; margin-right:4px;
+            font-family:'SF Mono',ui-monospace,monospace; }}
+  .notes-block {{ background:#fafafa; border-left:3px solid var(--accent); padding:14px 18px;
+                 border-radius:0 6px 6px 0; margin-top:12px; }}
+  .notes-title {{ font-size:12px; font-weight:600; color:var(--accent); margin-bottom:8px;
+                 letter-spacing:0.02em; }}
+  .notes-block p {{ margin:6px 0; font-size:13px; line-height:1.6; color:var(--text); }}
+  .notes-block strong {{ color:var(--accent); font-weight:600; }}
   td.up {{ color:var(--up); font-weight:600; }}
   td.down {{ color:var(--down); font-weight:600; }}
   td.muted, .muted {{ color:var(--muted); }}
@@ -307,11 +419,13 @@ def main() -> int:
 </style></head><body>
 
 <header>
-  <h1>GPU 云租金追踪 <span class="pill">v0.3 · 每日</span></h1>
-  <div class="sub">{today_in_data} 快照 · 6 provider 公开 API/页面 · 投资信号面板将在 v0.4 上线</div>
+  <h1>GPU 云租金追踪 <span class="pill">v0.4 · 信号面板</span></h1>
+  <div class="sub">{today_in_data} 快照 · 6 provider 公开 API/页面 · 累积 {n_days} 天历史</div>
 </header>
 
 {cards}
+
+{dashboard}
 
 <section>
   <h2>① 跨 provider 对比 — On-Demand (单卡 $/hr 中位数)</h2>
@@ -329,6 +443,8 @@ def main() -> int:
   <h2>③ Spot vs On-Demand 折扣 — 紧缺度信号</h2>
   {spread}
 </section>
+
+{trend}
 
 <footer>
   数据来源:
