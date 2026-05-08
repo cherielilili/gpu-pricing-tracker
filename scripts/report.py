@@ -261,29 +261,156 @@ def signal_dashboard_html(signals: list[dict], notes: list[str], n_days: int) ->
 """
 
 
-def trend_section_html(n_days: int) -> str:
-    """Placeholder until ≥3 days of data accumulate. After that, render
-    inline-SVG sparklines per GPU. Building infrastructure here so it
-    activates automatically as data grows."""
+INSTITUTIONAL_PROVIDERS = {"lambda", "crusoe", "nebius", "runpod", "coreweave",
+                            "hyperstack", "paperspace", "aws", "azure", "gcp", "oracle"}
+
+
+def _daily_median(rows: list[dict], gpu: str, rental_type: str,
+                   providers: set[str] | None = None,
+                   gpu_count: str = "1") -> dict[str, float]:
+    """Group price_median across institutional providers per day."""
+    by_date: dict[str, list[float]] = defaultdict(list)
+    for r in rows:
+        if r["gpu_model"] != gpu or r["rental_type"] != rental_type:
+            continue
+        if r.get("gpu_count") != gpu_count:
+            continue
+        if providers and r["provider"] not in providers:
+            continue
+        try:
+            by_date[r["date"]].append(float(r["price_median_usd"]))
+        except (KeyError, ValueError):
+            continue
+    return {d: statistics.median(ps) for d, ps in by_date.items() if ps}
+
+
+def _sparkline_svg(daily: dict[str, float], width: int = 240, height: int = 40,
+                    color: str = "#1f3a5f") -> str:
+    if len(daily) < 2:
+        return '<span class="muted" style="font-size:11px;">数据不足</span>'
+    sorted_dates = sorted(daily.keys())
+    values = [daily[d] for d in sorted_dates]
+    vmin, vmax = min(values), max(values)
+    rng = (vmax - vmin) or 1.0
+    pad = 4
+    n = len(values)
+    points = []
+    for i, v in enumerate(values):
+        x = pad + i * (width - 2 * pad) / (n - 1)
+        y = pad + (1 - (v - vmin) / rng) * (height - 2 * pad)
+        points.append(f"{x:.1f},{y:.1f}")
+    polyline = " ".join(points)
+    last_x, last_y = points[-1].split(",")
+    return f'''<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="{color}" stroke-width="1.5" points="{polyline}"/>
+      <circle cx="{last_x}" cy="{last_y}" r="2.5" fill="{color}"/>
+    </svg>'''
+
+
+def trend_section_html(rows: list[dict], n_days: int) -> str:
     if n_days < 3:
-        return f"""
+        return f'''
 <section>
   <h2>④ 30/90 天趋势 — 数据累积中</h2>
   <div class="empty">
-    当前历史: <b>{n_days} 天</b><br>
-    sparkline 趋势图将在累积到 3 天后自动出现，30D 信号 delta 在 7 天后激活。
+    当前历史: <b>{n_days} 天</b> — 至少需要 3 天才能渲染 sparkline。
   </div>
-</section>
-"""
-    # P5: render real sparklines. For now return placeholder.
-    return f"""
+</section>'''
+
+    # GPU 列表 — 只渲染有 ≥3 天数据的
+    target_gpus = [
+        "H100_SXM", "H200", "B200", "GB200", "MI300X",
+        "A100_SXM_80GB", "L40S", "RTX_4090", "RTX_5090",
+    ]
+
+    body_rows = []
+    for gpu in target_gpus:
+        od_daily = _daily_median(rows, gpu, "on_demand", INSTITUTIONAL_PROVIDERS)
+        spot_daily = _daily_median(rows, gpu, "spot", INSTITUTIONAL_PROVIDERS | {"vast.ai", "sfcompute"})
+
+        # fallback: if institutional empty, fall back to all providers (Vast etc.)
+        if not od_daily:
+            od_daily = _daily_median(rows, gpu, "on_demand", None)
+        if not spot_daily:
+            spot_daily = _daily_median(rows, gpu, "spot", None)
+
+        if not od_daily and not spot_daily:
+            continue
+
+        # compute 30D delta on whichever has data
+        primary = od_daily if len(od_daily) >= len(spot_daily) else spot_daily
+        primary_label = "on-demand" if primary is od_daily else "spot"
+        sorted_dates = sorted(primary.keys())
+        latest = primary[sorted_dates[-1]]
+        # 30D ago lookup
+        from datetime import datetime as _dt, timedelta as _td
+        target = (_dt.fromisoformat(sorted_dates[-1]) - _td(days=30)).strftime("%Y-%m-%d")
+        prior_candidates = [d for d in sorted_dates if d <= target]
+        if prior_candidates:
+            prior = primary[prior_candidates[-1]]
+            delta_pct = (latest - prior) / prior * 100 if prior else 0
+            delta_str = f"{delta_pct:+.1f}%"
+            delta_class = "up" if delta_pct > 5 else ("down" if delta_pct < -5 else "muted")
+        else:
+            delta_str = "—"
+            delta_class = "muted"
+
+        # color sparkline by direction (last-vs-first across whole series)
+        def _line_color(daily: dict[str, float]) -> str:
+            if not daily:
+                return "#9ca3af"
+            sd = sorted(daily.keys())
+            if len(sd) < 2:
+                return "#1f3a5f"
+            change = (daily[sd[-1]] - daily[sd[0]]) / daily[sd[0]] if daily[sd[0]] else 0
+            if change > 0.05:
+                return "#b91c1c"  # red — rising (tightening)
+            if change < -0.05:
+                return "#0e7490"  # teal — falling (softening)
+            return "#1f3a5f"  # neutral blue
+
+        od_svg = _sparkline_svg(od_daily, color=_line_color(od_daily)) if od_daily else "—"
+        spot_svg = _sparkline_svg(spot_daily, color=_line_color(spot_daily)) if spot_daily else "—"
+
+        first_d = min((sorted(od_daily.keys())[0] if od_daily else "9999"),
+                      (sorted(spot_daily.keys())[0] if spot_daily else "9999"))
+        last_d = max((sorted(od_daily.keys())[-1] if od_daily else "0000"),
+                     (sorted(spot_daily.keys())[-1] if spot_daily else "0000"))
+
+        n_days_gpu = len(set(od_daily) | set(spot_daily))
+        body_rows.append(f'''
+<tr>
+  <th>{GPU_LABEL.get(gpu, gpu)}</th>
+  <td>{od_svg}</td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">${latest:.2f}</td>
+  <td class="{delta_class}">{delta_str}<sup class="src-tag">vs 30D · {primary_label}</sup></td>
+  <td>{spot_svg}</td>
+  <td class="muted" style="font-size:11px;">{n_days_gpu}d · {first_d[5:]}→{last_d[5:]}</td>
+</tr>''')
+
+    if not body_rows:
+        return f'''
 <section>
   <h2>④ 30/90 天趋势</h2>
-  <div class="empty">
-    历史 {n_days} 天 — sparkline 渲染将在 P5 上线（目前累积中）。
-  </div>
-</section>
-"""
+  <div class="empty">仍在累积数据。</div>
+</section>'''
+
+    return f'''
+<section>
+  <h2>④ 价格趋势 — 机构 provider 单卡日中位 ($/hr)</h2>
+  <table class="data-table trend-table">
+    <thead>
+      <tr><th>GPU</th><th>On-Demand 趋势</th><th>最新</th><th>30D Δ</th><th>Spot 趋势</th><th>历史</th></tr>
+    </thead>
+    <tbody>{''.join(body_rows)}</tbody>
+  </table>
+  <p class="hint">
+    线条颜色：<span style="color:#b91c1c;font-weight:600;">红</span> = 上涨（紧缺）·
+    <span style="color:#0e7490;font-weight:600;">青</span> = 下跌（软化）·
+    <span style="color:#1f3a5f;font-weight:600;">蓝</span> = 持平。
+    机构 provider = Lambda / Crusoe / Nebius / RunPod / CoreWeave / Hyperstack / Paperspace / AWS / Azure / GCP / Oracle。
+  </p>
+</section>'''
 
 
 def cards_block(rows: list[dict], date: str) -> str:
@@ -337,7 +464,7 @@ def main() -> int:
     signals = sig.all_signals()
     notes = sig.investment_notes(signals) if signals else []
     dashboard = signal_dashboard_html(signals, notes, n_days)
-    trend = trend_section_html(n_days)
+    trend = trend_section_html(rows, n_days)
     cross_od = cross_provider_table(today_rows, "on_demand")
     cross_spot = cross_provider_table(today_rows, "spot")
     spread = spot_vs_ondemand_table(today_rows)
@@ -404,6 +531,8 @@ def main() -> int:
                  letter-spacing:0.02em; }}
   .notes-block p {{ margin:6px 0; font-size:13px; line-height:1.6; color:var(--text); }}
   .notes-block strong {{ color:var(--accent); font-weight:600; }}
+  .trend-table td {{ vertical-align:middle; padding:4px 10px; }}
+  .trend-table svg {{ display:block; }}
   td.up {{ color:var(--up); font-weight:600; }}
   td.down {{ color:var(--down); font-weight:600; }}
   td.muted, .muted {{ color:var(--muted); }}
