@@ -25,7 +25,7 @@ REPORTS_DIR = ROOT / "reports"
 # GPU display order — most-watched on top.
 GPU_ORDER = [
     "B200", "GB200", "B300",
-    "H200", "H100_SXM", "H100_PCIE", "H100_NVL",
+    "H200", "H200_NVL", "H100_SXM", "H100_PCIE", "H100_NVL",
     "MI300X", "MI325X", "MI355X",
     "A100_SXM_80GB", "A100_SXM_40GB", "A100_PCIE_80GB", "A100_PCIE_40GB",
     "GH200",
@@ -39,6 +39,7 @@ GPU_LABEL = {
     "GB200": "GB200 NVL72",
     "B300": "B300",
     "H200": "H200",
+    "H200_NVL": "H200 NVL",
     "H100_SXM": "H100 SXM",
     "H100_PCIE": "H100 PCIe",
     "H100_NVL": "H100 NVL",
@@ -77,6 +78,7 @@ GPU_NOTE = {
     "GB200": "Blackwell rack-scale",
     "B300": "Blackwell Ultra (early)",
     "H200": "Hopper refresh",
+    "H200_NVL": "Hopper NVLink 模块",
     "H100_SXM": "NVDA core demand signal",
     "H100_PCIE": "Hopper PCIe",
     "H100_NVL": "Hopper NVLink 小节点",

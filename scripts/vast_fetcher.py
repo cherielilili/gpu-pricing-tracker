@@ -22,7 +22,7 @@ GPU_MAP = {
     "H100 PCIE": "H100_PCIE",
     "H100 NVL": "H100_NVL",
     "H200": "H200",
-    "H200 NVL": "H200",
+    "H200 NVL": "H200_NVL",
     "B200": "B200",
     "GB200": "GB200",
     "A100 SXM4": "A100_SXM_80GB",

@@ -48,6 +48,19 @@ class CatalogTest(unittest.TestCase):
                     f"{mod.__name__} maps {raw!r} to non-canonical {canonical!r}",
                 )
 
+    def test_one_raw_name_per_canonical_id(self):
+        # Two raw names sharing one canonical ID collide on the dedup key
+        # (date, provider, model, rental, region, count); with fixed per-SKU
+        # pricing the series silently flip-flops between their prices.
+        for mod in FETCHERS:
+            seen: dict[str, str] = {}
+            for raw, canonical in mod.GPU_MAP.items():
+                self.assertNotIn(
+                    canonical, seen,
+                    f"{mod.__name__}: {seen.get(canonical)!r} and {raw!r} both → {canonical!r}",
+                )
+                seen[canonical] = raw
+
 
 class Rtx6000SplitTest(unittest.TestCase):
     """The RTX 6000 family spans ~5x in price on the same provider (RunPod:
@@ -103,11 +116,23 @@ class CrusoeParserTest(unittest.TestCase):
             got, [("B300", 8.96, 7.0), ("A100_PCIE_80GB", 2.0, None)]
         )
 
-    def test_short_spot_column_keeps_last_card_on_demand(self):
-        got = parse(CRUSOE_FIXTURE_SHORT_SPOT)
-        self.assertEqual(
-            got, [("B300", 8.96, 7.0), ("A100_PCIE_80GB", 2.0, None)]
+    def test_short_spot_column_refuses_to_guess(self):
+        # A hole anywhere but the trailing spot cannot be located; the
+        # parser must emit nothing rather than shift prices across GPUs.
+        self.assertIsNone(parse(CRUSOE_FIXTURE_SHORT_SPOT))
+
+    def test_price_formats_entities_and_separators(self):
+        fixture = CRUSOE_FIXTURE.replace("$8.96", "$1,234.00").replace(
+            "$7.00</p><p>/</p><p>GPU-hr", "$7.00</p><p>&nbsp;/&nbsp;GPU-hr"
         )
+        got = parse(fixture)
+        self.assertEqual(got[0], ("B300", 1234.0, 7.0))
+
+    def test_zero_price_is_not_an_observation(self):
+        # Webflow placeholders render $0.00; the price guard lives in
+        # fetch(), so parse() surfaces 0.0 and the row is dropped there.
+        got = parse(CRUSOE_FIXTURE.replace("$8.96", "$0.00"))
+        self.assertEqual(got[0], ("B300", 0.0, 7.0))
 
     def test_layout_drift_returns_none(self):
         # cards without a matching cell block must never mis-pair
