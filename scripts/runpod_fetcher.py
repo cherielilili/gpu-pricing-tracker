@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 PROVIDER = "runpod"
 SOURCE_URL = "https://api.runpod.io/graphql"
@@ -26,7 +26,9 @@ GPU_MAP = {
     "H100 PCIe": "H100_PCIE",
     "H100 NVL": "H100_NVL",
     "H200 SXM": "H200",
-    "H200": "H200",
+    # Distinct product with its own price (~28% below SXM); sharing the
+    # H200 ID would collide on the dedup key and silently flip the series.
+    "H200 NVL": "H200_NVL",
     "B200": "B200",
     "B300": "B300",
     "GB200": "GB200",
@@ -37,7 +39,14 @@ GPU_MAP = {
     "L40": "L40",
     "RTX 4090": "RTX_4090",
     "RTX 5090": "RTX_5090",
+    # RTX 6000 family: 5x price spread across editions/generations on the
+    # same provider — track each as its own model. MIG slices are excluded
+    # (fractions of a GPU, break per-GPU normalization).
     "RTX PRO 6000": "RTX_PRO_6000",
+    "RTX PRO 6000 MaxQ": "RTX_PRO_6000_MAXQ",
+    "RTX PRO 6000 WK": "RTX_PRO_6000_WK",
+    "RTX 6000 Ada": "RTX_6000_ADA",
+    "RTX A6000": "RTX_A6000",
     "MI300X": "MI300X",
     "MI325X": "MI325X",
 }
@@ -97,8 +106,8 @@ def _row(today: str, fetched_at: str, gpu_model: str, region: str,
 
 
 def fetch() -> list[dict]:
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    fetched_at = datetime.now(UTC).isoformat(timespec="seconds")
 
     try:
         gpu_types = _post()

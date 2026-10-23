@@ -16,7 +16,6 @@ from __future__ import annotations
 import csv
 import statistics
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,12 +25,13 @@ REPORTS_DIR = ROOT / "reports"
 # GPU display order — most-watched on top.
 GPU_ORDER = [
     "B200", "GB200", "B300",
-    "H200", "H100_SXM", "H100_PCIE", "H100_NVL",
+    "H200", "H200_NVL", "H100_SXM", "H100_PCIE", "H100_NVL",
     "MI300X", "MI325X", "MI355X",
     "A100_SXM_80GB", "A100_SXM_40GB", "A100_PCIE_80GB", "A100_PCIE_40GB",
     "GH200",
     "L40S", "L40",
-    "RTX_PRO_6000",
+    "RTX_PRO_6000", "RTX_PRO_6000_MAXQ", "RTX_PRO_6000_WK",
+    "RTX_6000_ADA", "RTX_A6000",
     "RTX_5090", "RTX_4090",
 ]
 GPU_LABEL = {
@@ -39,6 +39,7 @@ GPU_LABEL = {
     "GB200": "GB200 NVL72",
     "B300": "B300",
     "H200": "H200",
+    "H200_NVL": "H200 NVL",
     "H100_SXM": "H100 SXM",
     "H100_PCIE": "H100 PCIe",
     "H100_NVL": "H100 NVL",
@@ -52,7 +53,11 @@ GPU_LABEL = {
     "GH200": "GH200",
     "L40S": "L40S",
     "L40": "L40",
-    "RTX_PRO_6000": "RTX PRO 6000",
+    "RTX_PRO_6000": "RTX PRO 6000 Blackwell",
+    "RTX_PRO_6000_MAXQ": "RTX PRO 6000 Max-Q",
+    "RTX_PRO_6000_WK": "RTX PRO 6000 Workstation",
+    "RTX_6000_ADA": "RTX 6000 Ada",
+    "RTX_A6000": "RTX A6000",
     "RTX_5090": "RTX 5090",
     "RTX_4090": "RTX 4090",
 }
@@ -73,13 +78,25 @@ GPU_NOTE = {
     "GB200": "Blackwell rack-scale",
     "B300": "Blackwell Ultra (early)",
     "H200": "Hopper refresh",
+    "H200_NVL": "Hopper NVLink 模块",
     "H100_SXM": "NVDA core demand signal",
     "H100_PCIE": "Hopper PCIe",
+    "H100_NVL": "Hopper NVLink 小节点",
+    "A100_SXM_80GB": "上一代训练主力",
+    "A100_SXM_40GB": "上一代 40GB",
+    "A100_PCIE_80GB": "Ampere PCIe 80GB",
+    "A100_PCIE_40GB": "Ampere PCIe 40GB",
+    "L40": "推理 / 图形",
     "MI300X": "AMD vs H100 spread",
     "MI325X": "AMD MI325 ramp",
     "MI355X": "AMD MI355 ramp",
     "RTX_5090": "Prosumer / 中国 AI",
     "RTX_4090": "Prosumer / 长尾",
+    "RTX_PRO_6000": "Blackwell prosumer 旗舰",
+    "RTX_PRO_6000_MAXQ": "Max-Q 300W 低功耗版",
+    "RTX_PRO_6000_WK": "Workstation 版",
+    "RTX_6000_ADA": "上一代 workstation",
+    "RTX_A6000": "Ampere workstation",
     "GH200": "ARM × Hopper",
     "L40S": "推理工作负载",
 }
@@ -264,6 +281,16 @@ def signal_dashboard_html(signals: list[dict], notes: list[str], n_days: int) ->
 INSTITUTIONAL_PROVIDERS = {"lambda", "crusoe", "nebius", "runpod", "coreweave",
                             "hyperstack", "paperspace", "aws", "azure", "gcp", "oracle"}
 
+# Series invalidated by the pre-rewrite Crusoe parser, which bled
+# neighbouring cards' prices into these models (GB200 rows carry H200's
+# price, MI355X rows carry MI300X's). The CSV is append-only so the rows
+# stay on disk, but no rendered statistic may consume them. The value is
+# the last affected date.
+CORRUPTED_SERIES: dict[tuple[str, str], str] = {
+    ("crusoe", "GB200"): "2026-10-21",
+    ("crusoe", "MI355X"): "2026-10-21",
+}
+
 
 def _daily_median(rows: list[dict], gpu: str, rental_type: str,
                    providers: set[str] | None = None,
@@ -272,6 +299,9 @@ def _daily_median(rows: list[dict], gpu: str, rental_type: str,
     by_date: dict[str, list[float]] = defaultdict(list)
     for r in rows:
         if r["gpu_model"] != gpu or r["rental_type"] != rental_type:
+            continue
+        cutoff = CORRUPTED_SERIES.get((r["provider"], gpu))
+        if cutoff and r["date"] <= cutoff:
             continue
         if r.get("gpu_count") != gpu_count:
             continue
@@ -317,11 +347,12 @@ def trend_section_html(rows: list[dict], n_days: int) -> str:
   </div>
 </section>'''
 
-    # GPU 列表 — 只渲染有 ≥3 天数据的
-    target_gpus = [
-        "H100_SXM", "H200", "B200", "GB200", "MI300X",
-        "A100_SXM_80GB", "L40S", "RTX_4090", "RTX_5090",
-    ]
+    # GPU 列表 — 只渲染已有 ≥3 天数据的模型, 按 GPU_ORDER 顺序. 新模型
+    # (如 RTX 6000 系列) 在累积满 3 天后自动出现, 无需维护硬编码清单.
+    dates_by_gpu: dict[str, set[str]] = defaultdict(set)
+    for r in rows:
+        dates_by_gpu[r["gpu_model"]].add(r["date"])
+    target_gpus = [g for g in GPU_ORDER if len(dates_by_gpu.get(g, ())) >= 3]
 
     body_rows = []
     for gpu in target_gpus:
@@ -343,7 +374,8 @@ def trend_section_html(rows: list[dict], n_days: int) -> str:
         sorted_dates = sorted(primary.keys())
         latest = primary[sorted_dates[-1]]
         # 30D ago lookup
-        from datetime import datetime as _dt, timedelta as _td
+        from datetime import datetime as _dt
+        from datetime import timedelta as _td
         target = (_dt.fromisoformat(sorted_dates[-1]) - _td(days=30)).strftime("%Y-%m-%d")
         prior_candidates = [d for d in sorted_dates if d <= target]
         if prior_candidates:
@@ -372,10 +404,10 @@ def trend_section_html(rows: list[dict], n_days: int) -> str:
         od_svg = _sparkline_svg(od_daily, color=_line_color(od_daily)) if od_daily else "—"
         spot_svg = _sparkline_svg(spot_daily, color=_line_color(spot_daily)) if spot_daily else "—"
 
-        first_d = min((sorted(od_daily.keys())[0] if od_daily else "9999"),
-                      (sorted(spot_daily.keys())[0] if spot_daily else "9999"))
-        last_d = max((sorted(od_daily.keys())[-1] if od_daily else "0000"),
-                     (sorted(spot_daily.keys())[-1] if spot_daily else "0000"))
+        first_d = min((min(od_daily.keys()) if od_daily else "9999"),
+                      (min(spot_daily.keys()) if spot_daily else "9999"))
+        last_d = max((max(od_daily.keys()) if od_daily else "0000"),
+                     (max(spot_daily.keys()) if spot_daily else "0000"))
 
         n_days_gpu = len(set(od_daily) | set(spot_daily))
         body_rows.append(f'''
@@ -389,7 +421,7 @@ def trend_section_html(rows: list[dict], n_days: int) -> str:
 </tr>''')
 
     if not body_rows:
-        return f'''
+        return '''
 <section>
   <h2>④ 30/90 天趋势</h2>
   <div class="empty">仍在累积数据。</div>
@@ -452,7 +484,6 @@ def main() -> int:
     if not rows:
         print("no observations — abort")
         return 1
-    today_iso = datetime.now().strftime("%Y-%m-%d")
     all_dates = sorted({r["date"] for r in rows})
     today_in_data = all_dates[-1]
     today_rows = [r for r in rows if r["date"] == today_in_data]

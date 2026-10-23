@@ -9,8 +9,8 @@ from __future__ import annotations
 import json
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
-from typing import Iterable
+from collections.abc import Iterable
+from datetime import UTC, datetime
 
 PROVIDER = "vast.ai"
 SOURCE_URL = "https://console.vast.ai/api/v0/bundles/"
@@ -22,14 +22,23 @@ GPU_MAP = {
     "H100 PCIE": "H100_PCIE",
     "H100 NVL": "H100_NVL",
     "H200": "H200",
-    "H200 NVL": "H200",
+    "H200 NVL": "H200_NVL",
     "B200": "B200",
     "GB200": "GB200",
     "A100 SXM4": "A100_SXM_80GB",
     "A100 PCIE": "A100_PCIE_80GB",
-    "A100X": "A100_80GB",
     "L40S": "L40S",
     "L40": "L40",
+    # RTX 6000 family: prices span 5x across editions/generations, so each
+    # variant is its own canonical model — never merge them into one bucket.
+    # Vast names lack "Blackwell": S=Server, Max-Q=300W, WS=Workstation.
+    # MIG slices ("RTX PRO 6000 MIG *") and Turing "Q RTX 6000" are excluded:
+    # fractions of a GPU / legacy noise.
+    "RTX PRO 6000 S": "RTX_PRO_6000",
+    "RTX PRO 6000 Max-Q": "RTX_PRO_6000_MAXQ",
+    "RTX PRO 6000 WS": "RTX_PRO_6000_WK",
+    "RTX 6000Ada": "RTX_6000_ADA",
+    "RTX A6000": "RTX_A6000",
     "RTX 4090": "RTX_4090",
     "RTX 5090": "RTX_5090",
     "MI300X": "MI300X",
@@ -101,8 +110,8 @@ def _aggregate(
 
 def fetch() -> list[dict]:
     """Return normalized observation rows for both on-demand and spot."""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    fetched_at = datetime.now(UTC).isoformat(timespec="seconds")
 
     base_query = {
         "verified": {"eq": True},

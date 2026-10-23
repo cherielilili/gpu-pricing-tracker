@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import re
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 PROVIDER = "lambda"
 SOURCE_URL = "https://lambda.ai/service/gpu-cloud"
@@ -55,8 +55,8 @@ def _normalize(label: str) -> str | None:
 
 
 def fetch() -> list[dict]:
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    fetched_at = datetime.now(UTC).isoformat(timespec="seconds")
 
     try:
         req = urllib.request.Request(SOURCE_URL, headers={"User-Agent": USER_AGENT})
