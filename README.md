@@ -57,10 +57,11 @@ source_url, fetched_at
 ## 运行
 
 ```bash
+./update.sh                    # 一键手动刷新: fetch + report + 打开 dashboard
 python3 scripts/fetch.py        # 拉取 + append
 python3 scripts/report.py       # 生成 HTML
 python3 -m unittest discover -s tests -v   # 模型目录一致性测试
-bash runner.sh                  # 一键: fetch + report + commit + push
+bash runner.sh                  # 定时任务用: fetch + report + commit + push
 ```
 
 ## 公开链接
