@@ -334,11 +334,12 @@ def trend_section_html(rows: list[dict], n_days: int) -> str:
   </div>
 </section>'''
 
-    # GPU 列表 — 只渲染有 ≥3 天数据的
-    target_gpus = [
-        "H100_SXM", "H200", "B200", "GB200", "MI300X",
-        "A100_SXM_80GB", "L40S", "RTX_4090", "RTX_5090",
-    ]
+    # GPU 列表 — 只渲染已有 ≥3 天数据的模型, 按 GPU_ORDER 顺序. 新模型
+    # (如 RTX 6000 系列) 在累积满 3 天后自动出现, 无需维护硬编码清单.
+    dates_by_gpu: dict[str, set[str]] = defaultdict(set)
+    for r in rows:
+        dates_by_gpu[r["gpu_model"]].add(r["date"])
+    target_gpus = [g for g in GPU_ORDER if len(dates_by_gpu.get(g, ())) >= 3]
 
     body_rows = []
     for gpu in target_gpus:

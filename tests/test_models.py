@@ -20,6 +20,7 @@ import report  # noqa: E402
 import runpod_fetcher  # noqa: E402
 import vast_fetcher  # noqa: E402
 from crusoe_fetcher import _normalize, parse  # noqa: E402
+from report import trend_section_html  # noqa: E402
 
 FETCHERS = (runpod_fetcher, vast_fetcher)
 
@@ -153,6 +154,34 @@ class CrusoeParserTest(unittest.TestCase):
             self.assertEqual(model, want, f"{vendor_gpu} {tags}")
             if model is not None:
                 self.assertIn(model, report.GPU_ORDER)
+
+
+class ReportTrendTest(unittest.TestCase):
+    """Section ④ must derive its model list from data (≥3 days) in
+    GPU_ORDER, not a hardcoded list — a hardcoded list is why the RTX 6000
+    family was missing from the trend table while present everywhere else."""
+
+    @staticmethod
+    def _row(date: str, model: str, price: str) -> dict:
+        return {
+            "date": date, "provider": "runpod", "gpu_model": model,
+            "gpu_count": "1", "region": "secure", "rental_type": "on_demand",
+            "price_min_usd": price, "price_median_usd": price,
+            "price_max_usd": price, "n_offers": "1",
+            "source_url": "x", "fetched_at": "x",
+        }
+
+    def test_model_with_three_days_appears(self):
+        rows = [self._row(f"2026-10-0{d}", "RTX_PRO_6000", "2.49") for d in (1, 2, 3)]
+        html = trend_section_html(rows, n_days=3)
+        self.assertIn("RTX PRO 6000 Blackwell", html)
+
+    def test_model_with_one_day_does_not(self):
+        rows = [self._row(f"2026-10-0{d}", "H100_SXM", "3.90") for d in (1, 2, 3)]
+        rows.append(self._row("2026-10-04", "RTX_PRO_6000", "2.49"))
+        html = trend_section_html(rows, n_days=4)
+        self.assertIn("H100 SXM", html)
+        self.assertNotIn("RTX PRO 6000", html)
 
 
 if __name__ == "__main__":
