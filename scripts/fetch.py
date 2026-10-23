@@ -71,12 +71,12 @@ def write(rows_by_key: dict[tuple, dict]) -> None:
 
 
 def main() -> int:
-    from vast_fetcher import fetch as fetch_vast
-    from runpod_fetcher import fetch as fetch_runpod
-    from lambda_fetcher import fetch as fetch_lambda
     from crusoe_fetcher import fetch as fetch_crusoe
+    from lambda_fetcher import fetch as fetch_lambda
     from nebius_fetcher import fetch as fetch_nebius
+    from runpod_fetcher import fetch as fetch_runpod
     from sfcompute_fetcher import fetch as fetch_sfcompute
+    from vast_fetcher import fetch as fetch_vast
 
     fetchers = [
         ("vast", fetch_vast),

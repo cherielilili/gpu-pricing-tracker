@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import re
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 PROVIDER = "nebius"
 SOURCE_URL = "https://nebius.com/prices"
@@ -21,7 +21,7 @@ USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
 
 ROW_RE = re.compile(
     r'\[\\"(NVIDIA[^"\\]+|AMD[^"\\]+)\\",\\"([^"\\]*)\\",\\"([^"\\]*)\\",\\"(?:from\s+)?\$([0-9]+\.[0-9]+)\\"',
-    re.I,
+    re.IGNORECASE,
 )
 
 
@@ -45,8 +45,8 @@ def _normalize(name: str) -> str | None:
 
 
 def fetch() -> list[dict]:
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    fetched_at = datetime.now(UTC).isoformat(timespec="seconds")
 
     try:
         req = urllib.request.Request(SOURCE_URL, headers={"User-Agent": USER_AGENT})

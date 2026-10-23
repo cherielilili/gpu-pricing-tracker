@@ -1,30 +1,30 @@
 """SF Compute — public homepage scrape.
 
 SF Compute is a spot-market-style cluster reseller. The full price API
-requires auth, but the public homepage prominently displays the current
-H100 spot price as a headline ("Buy H100s from $X.YZ/hr"). We capture
-that as a single observation per day. This is the lowest available H100
-spot price across their inventory — useful as a market-low signal.
+requires auth, and the public homepage headline this parser targeted
+("Buy H100s from $X.YZ/hr") has been removed from their site, so this
+fetcher now returns nothing every run. Kept wired in case the headline
+returns; their authenticated API would need credentials we don't have.
 
 The chart on the homepage shows historical spot prices but the data is
-client-rendered SVG; we only capture the headline number.
+client-rendered SVG; we only ever captured the headline number.
 """
 from __future__ import annotations
 
 import re
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 PROVIDER = "sfcompute"
 SOURCE_URL = "https://sfcompute.com/"
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 
-HEADLINE_RE = re.compile(r'Buy\s+(H100|H200|B200)s?\s+from\s+\$([0-9]+\.[0-9]+)/hr', re.I)
+HEADLINE_RE = re.compile(r'Buy\s+(H100|H200|B200)s?\s+from\s+\$([0-9]+\.[0-9]+)/hr', re.IGNORECASE)
 
 
 def fetch() -> list[dict]:
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    fetched_at = datetime.now(UTC).isoformat(timespec="seconds")
 
     try:
         req = urllib.request.Request(SOURCE_URL, headers={"User-Agent": USER_AGENT})

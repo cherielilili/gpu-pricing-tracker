@@ -1,0 +1,18 @@
+# Lint config only — this repo is not an installable package.
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "BLE", "FURB", "RUF"]
+ignore = [
+  # Fetchers intentionally swallow-and-log every exception so one dead
+  # provider can never abort the daily snapshot pipeline (see fetch.py main()).
+  "BLE001",
+  # HTML report templates are long single-line f-strings; reflowing them
+  # hurts readability of the generated markup more than it helps.
+  "E501",
+  # Bilingual repo: Chinese full-width punctuation in strings/docstrings is
+  # intentional content, not ambiguity.
+  "RUF001",
+  "RUF002",
+]

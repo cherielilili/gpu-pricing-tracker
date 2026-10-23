@@ -6,13 +6,32 @@
 
 | Provider | 接口 | 覆盖 |
 |---|---|---|
-| Vast.ai | 公开 API | NVIDIA 全系 + AMD MI300X + 4090/5090 |
-| RunPod | 公开 pricing 页 | H100/H200/A100/MI300X |
+| Vast.ai | 公开 API | H100/H200/B200/GB200/A100/L40S/L40 + RTX 6000 全系 + 4090/5090 + MI300X/MI325X |
+| RunPod | 公开 GraphQL | H100/H200/B200/B300/GB200/A100/L40S/L40 + RTX 6000 全系 + 4090/5090 + MI300X/MI325X |
 | Lambda Labs | HTML | H100/H200/B200 (P2) |
 | Together AI | HTML | H100/H200/B200 (P2) |
-| SF Compute | 公开 spot 市场 | H100 (P2) |
+| Crusoe | HTML | H100/H200/A100/L40S/B300/GB200/B200/MI300X/MI355X（仅公开报价） |
+| Nebius | HTML | H100/H200/B200 (P2) |
 | Hyperstack | HTML | H100/H200/MI300X (P2) |
-| Crusoe / Nebius | HTML | H100/H200/B200 (P2) |
+| SF Compute | 公开 spot 市场 | ❌ 站点改版后无公开价格，fetcher 保留但恒返回空（数据止于 2026-08-26） |
+
+Vast 只采 `verified` 主机（质量优先于覆盖）— 未认证机型的报价（如部分 RTX 6000 Ada）不会出现。
+
+## RTX 6000 系列
+
+同一 provider 内各版本价差可达 5 倍（RunPod: MaxQ $0.50 … WK $2.59），因此每个版本独立建模，绝不合并成一个中位数：
+
+| canonical ID | 卡 | RunPod 名称 | Vast 名称 |
+|---|---|---|---|
+| `RTX_PRO_6000` | PRO 6000 Blackwell Server 96GB | RTX PRO 6000 | RTX PRO 6000 S |
+| `RTX_PRO_6000_MAXQ` | PRO 6000 Blackwell Max-Q 96GB | RTX PRO 6000 MaxQ | RTX PRO 6000 Max-Q |
+| `RTX_PRO_6000_WK` | PRO 6000 Blackwell Workstation 96GB | RTX PRO 6000 WK | RTX PRO 6000 WS |
+| `RTX_6000_ADA` | RTX 6000 Ada 48GB | RTX 6000 Ada | RTX 6000Ada |
+| `RTX_A6000` | RTX A6000 (Ampere) 48GB | RTX A6000 | RTX A6000 |
+
+不追踪：MIG 切片（`PRO 6000 MIG 24/48GB`，非整卡）与 Turing 时代的 `Q RTX 6000`（遗留噪音）。`B300` 经 Crusoe 追踪；`MI355X` 由 Crusoe 页面覆盖（暂无公开报价）；`MI325X` 为 GPU_ORDER 预留位（尚无已接入 provider 上线）。
+
+Crusoe 解析器于 2026-10 重写：旧版跨卡片串价（历史 GB200 行实为 H200 价格、MI355X 行实为 MI300X 价格），且混入了 Self-Serve Deployments（推理端点）价格。现仅解析「GPU instances pricing」表（GPU model | On-demand | Current spot）。历史行不回改 — append-only。
 
 ## Schema
 
@@ -39,6 +58,7 @@ price_per_gpu_hour_usd, source_url, fetched_at
 ```bash
 python3 scripts/fetch.py        # 拉取 + append
 python3 scripts/report.py       # 生成 HTML
+python3 -m unittest discover -s tests -v   # 模型目录一致性测试
 bash runner.sh                  # 一键: fetch + report + commit + push
 ```
 

@@ -16,7 +16,6 @@ from __future__ import annotations
 import csv
 import statistics
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,7 +30,8 @@ GPU_ORDER = [
     "A100_SXM_80GB", "A100_SXM_40GB", "A100_PCIE_80GB", "A100_PCIE_40GB",
     "GH200",
     "L40S", "L40",
-    "RTX_PRO_6000",
+    "RTX_PRO_6000", "RTX_PRO_6000_MAXQ", "RTX_PRO_6000_WK",
+    "RTX_6000_ADA", "RTX_A6000",
     "RTX_5090", "RTX_4090",
 ]
 GPU_LABEL = {
@@ -52,7 +52,11 @@ GPU_LABEL = {
     "GH200": "GH200",
     "L40S": "L40S",
     "L40": "L40",
-    "RTX_PRO_6000": "RTX PRO 6000",
+    "RTX_PRO_6000": "RTX PRO 6000 Blackwell",
+    "RTX_PRO_6000_MAXQ": "RTX PRO 6000 Max-Q",
+    "RTX_PRO_6000_WK": "RTX PRO 6000 Workstation",
+    "RTX_6000_ADA": "RTX 6000 Ada",
+    "RTX_A6000": "RTX A6000",
     "RTX_5090": "RTX 5090",
     "RTX_4090": "RTX 4090",
 }
@@ -75,11 +79,22 @@ GPU_NOTE = {
     "H200": "Hopper refresh",
     "H100_SXM": "NVDA core demand signal",
     "H100_PCIE": "Hopper PCIe",
+    "H100_NVL": "Hopper NVLink 小节点",
+    "A100_SXM_80GB": "上一代训练主力",
+    "A100_SXM_40GB": "上一代 40GB",
+    "A100_PCIE_80GB": "Ampere PCIe 80GB",
+    "A100_PCIE_40GB": "Ampere PCIe 40GB",
+    "L40": "推理 / 图形",
     "MI300X": "AMD vs H100 spread",
     "MI325X": "AMD MI325 ramp",
     "MI355X": "AMD MI355 ramp",
     "RTX_5090": "Prosumer / 中国 AI",
     "RTX_4090": "Prosumer / 长尾",
+    "RTX_PRO_6000": "Blackwell prosumer 旗舰",
+    "RTX_PRO_6000_MAXQ": "Max-Q 300W 低功耗版",
+    "RTX_PRO_6000_WK": "Workstation 版",
+    "RTX_6000_ADA": "上一代 workstation",
+    "RTX_A6000": "Ampere workstation",
     "GH200": "ARM × Hopper",
     "L40S": "推理工作负载",
 }
@@ -343,7 +358,8 @@ def trend_section_html(rows: list[dict], n_days: int) -> str:
         sorted_dates = sorted(primary.keys())
         latest = primary[sorted_dates[-1]]
         # 30D ago lookup
-        from datetime import datetime as _dt, timedelta as _td
+        from datetime import datetime as _dt
+        from datetime import timedelta as _td
         target = (_dt.fromisoformat(sorted_dates[-1]) - _td(days=30)).strftime("%Y-%m-%d")
         prior_candidates = [d for d in sorted_dates if d <= target]
         if prior_candidates:
@@ -372,10 +388,10 @@ def trend_section_html(rows: list[dict], n_days: int) -> str:
         od_svg = _sparkline_svg(od_daily, color=_line_color(od_daily)) if od_daily else "—"
         spot_svg = _sparkline_svg(spot_daily, color=_line_color(spot_daily)) if spot_daily else "—"
 
-        first_d = min((sorted(od_daily.keys())[0] if od_daily else "9999"),
-                      (sorted(spot_daily.keys())[0] if spot_daily else "9999"))
-        last_d = max((sorted(od_daily.keys())[-1] if od_daily else "0000"),
-                     (sorted(spot_daily.keys())[-1] if spot_daily else "0000"))
+        first_d = min((min(od_daily.keys()) if od_daily else "9999"),
+                      (min(spot_daily.keys()) if spot_daily else "9999"))
+        last_d = max((max(od_daily.keys()) if od_daily else "0000"),
+                     (max(spot_daily.keys()) if spot_daily else "0000"))
 
         n_days_gpu = len(set(od_daily) | set(spot_daily))
         body_rows.append(f'''
@@ -389,7 +405,7 @@ def trend_section_html(rows: list[dict], n_days: int) -> str:
 </tr>''')
 
     if not body_rows:
-        return f'''
+        return '''
 <section>
   <h2>④ 30/90 天趋势</h2>
   <div class="empty">仍在累积数据。</div>
@@ -452,7 +468,6 @@ def main() -> int:
     if not rows:
         print("no observations — abort")
         return 1
-    today_iso = datetime.now().strftime("%Y-%m-%d")
     all_dates = sorted({r["date"] for r in rows})
     today_in_data = all_dates[-1]
     today_rows = [r for r in rows if r["date"] == today_in_data]

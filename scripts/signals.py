@@ -16,7 +16,7 @@ from __future__ import annotations
 import csv
 import statistics
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]

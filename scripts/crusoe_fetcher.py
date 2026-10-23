@@ -1,35 +1,46 @@
 """Crusoe Cloud — public pricing page scrape.
 
-The pricing page is a Webflow grid where each card has the structure:
-  <h4>NVIDIA <gpu_name></h4>
-  <div class="pricing-tag">{memory}GB</div>
-  <div class="pricing-tag">{form_factor}</div>
-  <p>$X.YZ/GPU-hr</p>          ← on-demand
-  <p>$X.YZ/GPU-hr</p>          ← reserved (we ignore; out of scope)
+The page (Webflow) renders the "GPU instances pricing" table
+(GPU model | On-demand | Current spot) as two sibling CMS collections:
+first the GPU cards (each div carries data-sort-name and links to
+/cloud/gpus/<slug>), then a flat block of price cells in the same card
+order — the whole On-demand column, then the whole Current-spot column.
+A cell holds either "$X.XX / GPU-hr" or "Contact sales".
 
-We emit only the first ($/hr) per card as on-demand.
+The cell count must cover the cards (2 cells per card, spot column may
+omit trailing cards); anything else means the layout changed again and we
+emit NOTHING rather than mis-pair prices across GPUs — the pre-2026-10
+parser did exactly that, blending in prices from other sections so its
+"GB200" rows were really H200's price.
+
+Other sections on the same page price DIFFERENT products and are never
+recorded: "Self-Serve Deployments" (inference endpoints: B200 $9.65,
+H200 $6.00, H100 $5.50, MI355X $7.70) and token-priced serverless models.
 """
 from __future__ import annotations
 
 import re
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 PROVIDER = "crusoe"
 SOURCE_URL = "https://crusoe.ai/cloud/pricing/"
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 
-ITEM_RE = re.compile(
-    r'pricing-item-heading">(NVIDIA|AMD)\s+([A-Z0-9]+)</h4>'
-    r'.*?pricing_tags-wr">(.*?)</a>'
-    r'.*?\$([0-9]+\.[0-9]+)/GPU-hr',
-    re.S,
-)
+# GPU-table cards: every data-sort-name inside the "GPU instances" table
+# region (scoped by its table headers, see parse()). Other sections (VM
+# types, serverless models, Self-Serve endpoints) carry data-sort-name too
+# and even link to /cloud/gpus/, so the region boundary is the discriminator.
+CARD_RE = re.compile(r'data-sort-name="((?:NVIDIA|AMD)\s+[^"]+)"')
 TAG_RE = re.compile(r'pricing-tag[^>]*>([^<]+)<')
-
-LABEL_TO_MODEL: dict[tuple[str, str, frozenset], str] = {
-    # (vendor, gpu_name, frozenset(tags)) → normalized model
-}
+# One price cell: either a $/GPU-hr price or "Contact sales".
+PRICE_CELL_RE = re.compile(
+    r'<div role="listitem" class="gpu-row[^"]*">\s*<div class="pricing-rich[^"]*">(.*?)</div>',
+    re.DOTALL,
+)
+# "$8.96</p><p>/</p><p>GPU-hr" — tags and whitespace may sit between the
+# price and the unit inside a cell.
+PRICE_RE = re.compile(r'\$([0-9]+\.[0-9]{2})(?:<[^>]+>|[\s/])*GPU-hr')
 
 
 def _normalize(vendor: str, gpu: str, tags: list[str]) -> str | None:
@@ -38,18 +49,18 @@ def _normalize(vendor: str, gpu: str, tags: list[str]) -> str | None:
         if gpu == "H200":
             return "H200"
         if gpu == "H100":
-            if "SXM" in t:
-                return "H100_SXM"
-            if "PCIE" in t or "PCIe" in tags:
+            if "PCIE" in t:
                 return "H100_PCIE"
             return "H100_SXM"  # default if unspecified
         if gpu == "B200":
             return "B200"
+        if gpu == "B300":
+            return "B300"
         if gpu == "GB200":
             return "GB200"
         if gpu == "A100":
             mem = "80GB" if "80GB" in t else ("40GB" if "40GB" in t else "")
-            ff = "SXM" if "SXM" in t else ("PCIE" if "PCIE" in t or "PCIe" in tags else "")
+            ff = "SXM" if "SXM" in t else ("PCIE" if "PCIE" in t else "")
             if mem and ff:
                 return f"A100_{ff}_{mem}"
             return None
@@ -57,6 +68,8 @@ def _normalize(vendor: str, gpu: str, tags: list[str]) -> str | None:
             return "L40S"
         if gpu == "L40":
             return "L40"
+        # Vera Rubin / GB300: no canonical slot yet; skip until they ship
+        # with public pricing.
     if vendor == "AMD":
         if gpu == "MI300X":
             return "MI300X"
@@ -67,9 +80,80 @@ def _normalize(vendor: str, gpu: str, tags: list[str]) -> str | None:
     return None
 
 
+def _row(today: str, fetched_at: str, model: str, rental_type: str, price: float) -> dict:
+    return {
+        "date": today,
+        "provider": PROVIDER,
+        "gpu_model": model,
+        "gpu_count": 1,
+        "region": "us",
+        "rental_type": rental_type,
+        "price_min_usd": round(price, 4),
+        "price_median_usd": round(price, 4),
+        "price_max_usd": round(price, 4),
+        "n_offers": 1,
+        "source_url": SOURCE_URL,
+        "fetched_at": fetched_at,
+    }
+
+
+def parse(html: str) -> list[tuple[str, float | None, float | None]] | None:
+    """Extract (gpu_model, on_demand_price, spot_price) triples from the
+    GPU instances table. Prices are None when the cell says Contact sales.
+    Returns None on layout drift so the caller can report it — never guess
+    a pairing."""
+    clean = re.sub(r"<style.*?</style>|<script.*?</script>", "", html, flags=re.DOTALL)
+
+    # Scope to the GPU instances table: from its "GPU model" column header
+    # to the next section's "CPU Type" header. Inside this region every
+    # data-sort-name is a GPU card and every gpu-row cell belongs to the
+    # flat cell block, so positional pairing is safe.
+    i0 = clean.find(">GPU model<")
+    i1 = clean.find(">CPU Type<")
+    if i0 < 0 or i1 < 0 or i1 <= i0:
+        return None
+    zone = clean[i0:i1]
+
+    # Tag blocks sit inside each card's own span, bounded by the next card.
+    matches = list(CARD_RE.finditer(zone))
+    cards: list[tuple[str, list[str]]] = []
+    for j, m in enumerate(matches):
+        name = m.group(1)
+        vendor, gpu = name.split(None, 1)
+        seg_end = matches[j + 1].start() if j + 1 < len(matches) else len(zone)
+        tag_m = re.search(r"pricing_tags-wr\">(.*?)</a>", zone[m.end():seg_end], re.DOTALL)
+        tags = TAG_RE.findall(tag_m.group(1)) if tag_m else []
+        cards.append((f"{vendor} {gpu}", tags))
+    if not cards:
+        return []
+
+    cells: list[float | None] = []
+    for cm in PRICE_CELL_RE.finditer(zone):
+        pm = PRICE_RE.search(cm.group(1))
+        cells.append(float(pm.group(1)) if pm else None)
+
+    n = len(cards)
+    if len(cells) == 2 * n:
+        od_cells, spot_cells = cells[:n], cells[n:]
+    elif len(cells) == 2 * n - 1:
+        # spot column may omit trailing cards — pad so the last card keeps
+        # its on-demand price instead of being dropped by zip
+        od_cells, spot_cells = cells[:n], [*cells[n:], None]
+    else:
+        return None
+
+    out: list[tuple[str, float | None, float | None]] = []
+    for (name, tags), od, sp in zip(cards, od_cells, spot_cells, strict=True):
+        vendor, gpu = name.split(None, 1)
+        model = _normalize(vendor, gpu, tags)
+        if model:
+            out.append((model, od, sp))
+    return out
+
+
 def fetch() -> list[dict]:
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    fetched_at = datetime.now(UTC).isoformat(timespec="seconds")
 
     try:
         req = urllib.request.Request(SOURCE_URL, headers={"User-Agent": USER_AGENT})
@@ -79,37 +163,20 @@ def fetch() -> list[dict]:
         return []
 
     rows: list[dict] = []
-    seen: set[str] = set()
-    for m in ITEM_RE.finditer(html):
-        vendor, gpu, tags_html, price = m.group(1), m.group(2), m.group(3), float(m.group(4))
-        tags = TAG_RE.findall(tags_html)
-        model = _normalize(vendor, gpu, tags)
-        if not model:
-            continue
-        if model in seen:
-            continue
-        seen.add(model)
-        rows.append(
-            {
-                "date": today,
-                "provider": PROVIDER,
-                "gpu_model": model,
-                "gpu_count": 1,
-                "region": "us",
-                "rental_type": "on_demand",
-                "price_min_usd": round(price, 4),
-                "price_median_usd": round(price, 4),
-                "price_max_usd": round(price, 4),
-                "n_offers": 1,
-                "source_url": SOURCE_URL,
-                "fetched_at": fetched_at,
-            }
-        )
+    triples = parse(html)
+    if triples is None:
+        print("  [crusoe] pricing table layout changed — emitting nothing")
+        return []
+    for model, od, sp in triples:
+        if od is not None:
+            rows.append(_row(today, fetched_at, model, "on_demand", od))
+        if sp is not None:
+            rows.append(_row(today, fetched_at, model, "spot", sp))
     return rows
 
 
 if __name__ == "__main__":
-    rows = fetch()
-    print(f"crusoe: {len(rows)} rows")
-    for r in sorted(rows, key=lambda x: x["gpu_model"]):
-        print(f"  {r['gpu_model']:18s}  ${r['price_median_usd']:.3f}/hr")
+    got = fetch()
+    print(f"crusoe: {len(got)} rows")
+    for r in sorted(got, key=lambda x: (x["rental_type"], x["gpu_model"])):
+        print(f"  {r['gpu_model']:18s} {r['rental_type']:10s}  ${r['price_median_usd']:.2f}/hr")
