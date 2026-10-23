@@ -13,13 +13,13 @@ Alert rules:
 from __future__ import annotations
 
 import csv
+import json
 import os
 import statistics
 import sys
+import urllib.request
 from collections import defaultdict
 from pathlib import Path
-
-import requests
 
 ROOT = Path(__file__).resolve().parents[1]
 OBS = ROOT / "data" / "observations.csv"
@@ -140,10 +140,17 @@ def push(text: str) -> bool:
         print(text)
         return False
     try:
-        r = requests.post(url, json={"content": text}, proxies=PROXIES, timeout=10)
-        ok = r.status_code in (200, 204)
-        print(f"[detect_changes] discord push status={r.status_code}", file=sys.stderr)
-        return ok
+        # local proxy required to reach discord from this network
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler(PROXIES))
+        req = urllib.request.Request(
+            url,
+            data=json.dumps({"content": text}).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with opener.open(req, timeout=10) as resp:
+            print(f"[detect_changes] discord push status={resp.status}", file=sys.stderr)
+            return resp.status in (200, 204)
     except Exception as e:
         print(f"[detect_changes] push failed: {e}", file=sys.stderr)
         return False

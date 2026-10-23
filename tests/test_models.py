@@ -184,5 +184,30 @@ class ReportTrendTest(unittest.TestCase):
         self.assertNotIn("RTX PRO 6000", html)
 
 
+class CorruptedSeriesTest(unittest.TestCase):
+    """The pre-rewrite Crusoe parser recorded wrong-GPU prices for GB200 and
+    MI355X (see report.CORRUPTED_SERIES). Those rows must never feed a
+    rendered statistic, even though they stay in the append-only CSV."""
+
+    def test_corrupted_crusoe_history_renders_nothing(self):
+        rows = []
+        for d in (1, 2, 3):
+            for model in ("GB200", "MI355X", "H100_SXM"):
+                r = dict(ReportTrendTest._row(f"2026-10-0{d}", model, "3.00"))
+                r["provider"] = "crusoe"
+                rows.append(r)
+        html = trend_section_html(rows, n_days=3)
+        self.assertIn("H100 SXM", html)        # clean series still renders
+        self.assertNotIn("GB200 NVL72", html)  # corrupted series dropped
+        self.assertNotIn("MI355X", html)
+
+    def test_clean_providers_for_same_model_render(self):
+        # exclusion is per (provider, model): crusoe GB200 is excluded, a
+        # runpod GB200 series still counts
+        rows = [ReportTrendTest._row(f"2026-10-0{d}", "GB200", "8.00") for d in (1, 2, 3)]
+        html = trend_section_html(rows, n_days=3)
+        self.assertIn("GB200 NVL72", html)
+
+
 if __name__ == "__main__":
     unittest.main()

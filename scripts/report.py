@@ -281,6 +281,16 @@ def signal_dashboard_html(signals: list[dict], notes: list[str], n_days: int) ->
 INSTITUTIONAL_PROVIDERS = {"lambda", "crusoe", "nebius", "runpod", "coreweave",
                             "hyperstack", "paperspace", "aws", "azure", "gcp", "oracle"}
 
+# Series invalidated by the pre-rewrite Crusoe parser, which bled
+# neighbouring cards' prices into these models (GB200 rows carry H200's
+# price, MI355X rows carry MI300X's). The CSV is append-only so the rows
+# stay on disk, but no rendered statistic may consume them. The value is
+# the last affected date.
+CORRUPTED_SERIES: dict[tuple[str, str], str] = {
+    ("crusoe", "GB200"): "2026-10-21",
+    ("crusoe", "MI355X"): "2026-10-21",
+}
+
 
 def _daily_median(rows: list[dict], gpu: str, rental_type: str,
                    providers: set[str] | None = None,
@@ -289,6 +299,9 @@ def _daily_median(rows: list[dict], gpu: str, rental_type: str,
     by_date: dict[str, list[float]] = defaultdict(list)
     for r in rows:
         if r["gpu_model"] != gpu or r["rental_type"] != rental_type:
+            continue
+        cutoff = CORRUPTED_SERIES.get((r["provider"], gpu))
+        if cutoff and r["date"] <= cutoff:
             continue
         if r.get("gpu_count") != gpu_count:
             continue
