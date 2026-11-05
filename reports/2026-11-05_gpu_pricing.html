@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<title>GPU 云租金追踪 — 2026-11-05</title>
+<style>
+  :root {
+    --bg:#ffffff; --surface:#fafafa; --border:#e5e7eb;
+    --text:#111827; --muted:#6b7280; --accent:#1f3a5f;
+    --up:#b91c1c; --down:#0e7490;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:32px 40px; background:var(--bg); color:var(--text);
+         font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','SF Pro Text',
+                     'Helvetica Neue',system-ui,sans-serif;
+         font-size:14px; line-height:1.6; max-width:1200px; margin-left:auto; margin-right:auto; }
+  header { border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:24px; }
+  h1 { margin:0; font-size:22px; font-weight:600; color:var(--text); }
+  .sub { color:var(--muted); font-size:13px; margin-top:4px; }
+  .pill { display:inline-block; padding:1px 8px; background:#eef2f7; color:var(--accent);
+          border-radius:3px; font-size:11px; margin-left:8px; font-weight:500; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+            gap:12px; margin-bottom:24px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+           padding:12px 16px; }
+  .card .label { font-size:11px; color:var(--muted); letter-spacing:0.04em; font-weight:500; }
+  .card .val { font-size:20px; font-weight:600; margin-top:4px; color:var(--text); }
+  section { margin-bottom:32px; }
+  h2 { font-size:15px; font-weight:600; margin:0 0 12px; padding-bottom:6px;
+        border-bottom:1px solid var(--border); }
+  table.data-table { width:100%; border-collapse:collapse; font-size:13px;
+                       font-variant-numeric:tabular-nums; }
+  .data-table th, .data-table td { padding:7px 10px; text-align:left;
+                                     border-bottom:1px solid var(--border); }
+  .data-table thead th { background:var(--surface); font-weight:600; color:var(--muted);
+                          font-size:12px; letter-spacing:0.02em; }
+  .data-table tbody tr:hover { background:#f9fafb; }
+  .data-table tbody th { font-weight:500; color:var(--text); background:transparent; }
+  td.cheapest { background:#ecfdf5; color:#047857; font-weight:600; }
+  td.priciest { background:#fef2f2; color:#b91c1c; font-weight:600; }
+  .signal-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+                 gap:12px; margin-bottom:16px; }
+  .signal-card { background:var(--surface); border:1px solid var(--border); border-radius:6px;
+                 padding:14px 16px; }
+  .signal-head { display:flex; justify-content:space-between; align-items:center;
+                 margin-bottom:8px; }
+  .signal-name { font-size:12px; color:var(--muted); font-weight:500; letter-spacing:0.02em; }
+  .signal-pill { display:inline-block; padding:2px 8px; border:1px solid; border-radius:3px;
+                 font-size:10px; font-weight:600; letter-spacing:0.02em; }
+  .signal-headline { font-size:15px; font-weight:600; color:var(--text); margin-bottom:6px;
+                     font-variant-numeric:tabular-nums; }
+  .signal-detail { font-size:11px; color:var(--muted); line-height:1.5; margin:6px 0 0; }
+  .signal-tickers { margin-top:8px; }
+  .ticker { display:inline-block; padding:1px 7px; background:#eef2f7; color:var(--accent);
+            border-radius:3px; font-size:10px; font-weight:600; margin-right:4px;
+            font-family:'SF Mono',ui-monospace,monospace; }
+  .notes-block { background:#fafafa; border-left:3px solid var(--accent); padding:14px 18px;
+                 border-radius:0 6px 6px 0; margin-top:12px; }
+  .notes-title { font-size:12px; font-weight:600; color:var(--accent); margin-bottom:8px;
+                 letter-spacing:0.02em; }
+  .notes-block p { margin:6px 0; font-size:13px; line-height:1.6; color:var(--text); }
+  .notes-block strong { color:var(--accent); font-weight:600; }
+  .trend-table td { vertical-align:middle; padding:4px 10px; }
+  .trend-table svg { display:block; }
+  td.up { color:var(--up); font-weight:600; }
+  td.down { color:var(--down); font-weight:600; }
+  td.muted, .muted { color:var(--muted); }
+  sup.src-tag { font-size:9px; color:var(--muted); margin-left:4px; font-weight:400; letter-spacing:0; }
+  .empty { padding:16px; background:var(--surface); border:1px solid var(--border);
+            border-radius:6px; color:var(--muted); text-align:center; font-size:13px; }
+  .hint { font-size:12px; color:var(--muted); margin-top:8px; }
+  footer { margin-top:32px; padding-top:16px; border-top:1px solid var(--border);
+            font-size:12px; color:var(--muted); }
+  footer code { background:var(--surface); padding:1px 4px; border-radius:3px; font-size:11px; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+</style></head><body>
+
+<header>
+  <h1>GPU 云租金追踪 <span class="pill">v0.4 · 信号面板</span></h1>
+  <div class="sub">2026-11-05 快照 · 6 provider 公开 API/页面 · 累积 257 天历史</div>
+</header>
+
+<div class="cards"><div class="card"><div class="label">观察点</div><div class="val">144</div></div><div class="card"><div class="label">Provider</div><div class="val">4</div></div><div class="card"><div class="label">GPU 型号</div><div class="val">17</div></div><div class="card"><div class="label">H100 SXM 中位 (on-demand)</div><div class="val">$3.48/hr</div></div><div class="card"><div class="label">B200 中位 (on-demand)</div><div class="val">$7.89/hr</div></div></div>
+
+
+<section>
+  <h2>★ Investment Signal Dashboard</h2>
+  <div class="signal-grid">
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">Hopper 需求强度</span>
+            <span class="signal-pill" style="color:#b91c1c;background:#fef2f2;border-color:#fecaca">走软 ↓</span>
+          </div>
+          <div class="signal-headline">$3.34/hr 中位</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px;">-13.2% / 30D</div>
+          <div class="signal-detail">Lambda/Crusoe/Nebius/RunPod H100 SXM on-demand 中位 — 价格回落代表 Hopper 需求软化</div>
+          <div class="signal-tickers"><span class="ticker">NVDA</span></div>
+        </div>
+        
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">Blackwell ramp</span>
+            <span class="signal-pill" style="color:#b91c1c;background:#fef2f2;border-color:#fecaca">走软 ↓</span>
+          </div>
+          <div class="signal-headline">3 provider · +136% vs H100</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px;">premium +75.4% / 30D</div>
+          <div class="signal-detail">B200 在 3 家 institutional 上线 · 相对 H100 溢价收窄即 ramp 加速</div>
+          <div class="signal-tickers"><span class="ticker">NVDA</span></div>
+        </div>
+        
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">AMD 竞争</span>
+            <span class="signal-pill" style="color:#b91c1c;background:#fef2f2;border-color:#fecaca">走软 ↓</span>
+          </div>
+          <div class="signal-headline">MI300X $2.39 · vs H100 折价 28%</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px;">discount +25.6pp / 30D</div>
+          <div class="signal-detail">MI300X 相对 H100 折价收窄 → AMD 议价能力上升 / 折价扩大 → 仍以便宜替代定位</div>
+          <div class="signal-tickers"><span class="ticker">AMD</span></div>
+        </div>
+        
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">Neocloud 利润</span>
+            <span class="signal-pill" style="color:#047857;background:#ecfdf5;border-color:#a7f3d0">积极 ↑</span>
+          </div>
+          <div class="signal-headline">高端 $4.79 · 普通 $2.69 · 价差 +78%</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px;">spread +390.9pp / 30D</div>
+          <div class="signal-detail">Lambda/Crusoe (高端) vs RunPod/Nebius (commodity) H100 价差 — 价差扩大 = 高端议价能力强</div>
+          <div class="signal-tickers"><span class="ticker">CRWV</span> <span class="ticker">NBIS</span></div>
+        </div>
+        
+        <div class="signal-card">
+          <div class="signal-head">
+            <span class="signal-name">Prosumer 算力</span>
+            <span class="signal-pill" style="color:#6b7280;background:#f3f4f6;border-color:#d1d5db">稳定 ·</span>
+          </div>
+          <div class="signal-headline">4090 $0.49 · 5090 $0.84</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:4px;">4090 +2.6% / 30D</div>
+          <div class="signal-detail">Vast.ai 全球 4090/5090 中位 — 价格上涨可能反映中国/亚太本地 AI 抢算力</div>
+          <div class="signal-tickers"><span class="ticker">NVDA</span></div>
+        </div>
+        </div>
+  <div class="notes-block"><div class="notes-title">📝 Investment Notes (自动生成)</div><p>**NVDA**: H100 价格走软，Hopper 周期可能见顶；Blackwell 尚未接力。需关注下季 capex guidance。</p><p>**AMD**: MI300X 折价扩大，仍以「便宜 H100」定位卖方议价 — 短期不利。</p><p>**CRWV / NBIS**: 高端 vs 普通 neocloud 价差扩大，CRWV gross margin 可持续；NBIS 抢市占空间增大。</p></div>
+  
+</section>
+
+
+<section>
+  <h2>① 跨 provider 对比 — On-Demand (单卡 $/hr 中位数)</h2>
+  
+<table class="data-table">
+  <thead><tr><th>GPU</th><th>Lambda</th><th>Crusoe</th><th>Nebius</th><th>RunPod</th><th>Vast.ai</th><th>SF Compute</th></tr></thead>
+  <tbody><tr><th>B200<sup class="src-tag">Blackwell ramp</sup></th><td>$7.89</td><td class="muted">—</td><td class="cheapest">$0.99</td><td class="priciest">$7.99</td><td class="muted">—</td><td class="muted">—</td></tr><tr><th>B300<sup class="src-tag">Blackwell Ultra (early)</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$8.99</td><td class="muted">—</td><td class="muted">—</td></tr><tr><th>H200<sup class="src-tag">Hopper refresh</sup></th><td class="muted">—</td><td class="muted">—</td><td class="cheapest">$0.79</td><td class="priciest">$4.44</td><td>$3.58</td><td class="muted">—</td></tr><tr><th>H100 SXM<sup class="src-tag">NVDA core demand signal</sup></th><td class="priciest">$4.79</td><td class="muted">—</td><td class="cheapest">$0.79</td><td>$3.34</td><td>$3.48</td><td class="muted">—</td></tr><tr><th>H100 PCIe<sup class="src-tag">Hopper PCIe</sup></th><td class="priciest">$3.79</td><td class="muted">—</td><td class="muted">—</td><td>$2.89</td><td class="cheapest">$2.54</td><td class="muted">—</td></tr><tr><th>H100 NVL</th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="cheapest">$3.19</td><td class="priciest">$3.38</td><td class="muted">—</td></tr><tr><th>MI300X<sup class="src-tag">AMD vs H100 spread</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$2.39</td><td class="muted">—</td><td class="muted">—</td></tr><tr><th>A100 SXM 80GB</th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="priciest">$1.59</td><td class="cheapest">$1.07</td><td class="muted">—</td></tr><tr><th>A100 SXM 40GB</th><td class="priciest">$1.99</td><td class="muted">—</td><td class="muted">—</td><td class="cheapest">$1.00</td><td class="muted">—</td><td class="muted">—</td></tr><tr><th>A100 PCIe 80GB</th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="priciest">$1.49</td><td class="cheapest">$0.94</td><td class="muted">—</td></tr><tr><th>A100 PCIe 40GB</th><td>$1.29</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td></tr><tr><th>GH200<sup class="src-tag">ARM × Hopper</sup></th><td>$2.59</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td></tr><tr><th>L40S<sup class="src-tag">推理工作负载</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="priciest">$0.94</td><td class="cheapest">$0.86</td><td class="muted">—</td></tr><tr><th>L40</th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="priciest">$0.82</td><td class="cheapest">$0.65</td><td class="muted">—</td></tr><tr><th>RTX PRO 6000</th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$2.09</td><td class="muted">—</td><td class="muted">—</td></tr><tr><th>RTX 5090<sup class="src-tag">Prosumer / 中国 AI</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="priciest">$1.19</td><td class="cheapest">$0.94</td><td class="muted">—</td></tr><tr><th>RTX 4090<sup class="src-tag">Prosumer / 长尾</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="priciest">$0.61</td><td class="cheapest">$0.46</td><td class="muted">—</td></tr></tbody>
+</table>
+
+  <p class="hint">绿色 = 该 GPU 当前最便宜 provider · 红色 = 最贵 · "—" = 该 provider 暂未公开此 GPU。</p>
+</section>
+
+<section>
+  <h2>② 跨 provider 对比 — Spot / 现货</h2>
+  
+<table class="data-table">
+  <thead><tr><th>GPU</th><th>Lambda</th><th>Crusoe</th><th>Nebius</th><th>RunPod</th><th>Vast.ai</th><th>SF Compute</th></tr></thead>
+  <tbody><tr><th>H200<sup class="src-tag">Hopper refresh</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$1.87</td><td class="muted">—</td></tr><tr><th>H100 SXM<sup class="src-tag">NVDA core demand signal</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$1.67</td><td class="muted">—</td></tr><tr><th>H100 PCIe<sup class="src-tag">Hopper PCIe</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$1.92</td><td class="muted">—</td></tr><tr><th>H100 NVL</th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$1.47</td><td class="muted">—</td></tr><tr><th>A100 SXM 80GB</th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$0.67</td><td class="muted">—</td></tr><tr><th>A100 PCIe 80GB</th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$0.27</td><td class="muted">—</td></tr><tr><th>L40S<sup class="src-tag">推理工作负载</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$0.54</td><td class="muted">—</td></tr><tr><th>L40</th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$0.46</td><td class="muted">—</td></tr><tr><th>RTX 5090<sup class="src-tag">Prosumer / 中国 AI</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$0.70</td><td class="muted">—</td></tr><tr><th>RTX 4090<sup class="src-tag">Prosumer / 长尾</sup></th><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>$0.33</td><td class="muted">—</td></tr></tbody>
+</table>
+
+  <p class="hint">RunPod community + Vast.ai bid 市场 + SF Compute 现货拍卖。</p>
+</section>
+
+<section>
+  <h2>③ Spot vs On-Demand 折扣 — 紧缺度信号</h2>
+  
+<table class="data-table">
+  <thead><tr><th>GPU</th><th>Spot $/hr</th><th>On-demand $/hr</th><th>Discount</th><th>样本</th></tr></thead>
+  <tbody><tr><th>H200</th><td>$1.87</td><td>$3.59</td><td class='down'>48%</td><td class='muted'>4 spot · 5 on-demand</td></tr><tr><th>H100 SXM</th><td>$1.67</td><td>$3.48</td><td class='down'>52%</td><td class='muted'>2 spot · 6 on-demand</td></tr><tr><th>H100 PCIe</th><td>$1.92</td><td>$2.89</td><td class='down'>34%</td><td class='muted'>1 spot · 3 on-demand</td></tr><tr><th>H100 NVL</th><td>$1.47</td><td>$3.28</td><td class='down'>55%</td><td class='muted'>2 spot · 4 on-demand</td></tr><tr><th>A100 SXM 80GB</th><td>$0.67</td><td>$1.16</td><td class='down'>43%</td><td class='muted'>3 spot · 5 on-demand</td></tr><tr><th>A100 PCIe 80GB</th><td>$0.27</td><td>$1.10</td><td class='down'>75%</td><td class='muted'>2 spot · 4 on-demand</td></tr><tr><th>L40S</th><td>$0.54</td><td>$0.86</td><td class='down'>37%</td><td class='muted'>2 spot · 4 on-demand</td></tr><tr><th>L40</th><td>$0.46</td><td>$0.79</td><td class='down'>42%</td><td class='muted'>2 spot · 3 on-demand</td></tr><tr><th>RTX 5090</th><td>$0.70</td><td>$1.13</td><td class='down'>38%</td><td class='muted'>4 spot · 5 on-demand</td></tr><tr><th>RTX 4090</th><td>$0.33</td><td>$0.46</td><td class='muted'>27%</td><td class='muted'>5 spot · 7 on-demand</td></tr></tbody>
+</table>
+<p class="hint">Discount = (on-demand − spot) / on-demand. 越大说明 spot 越便宜，市场越宽松；越小说明现货供不应求。</p>
+
+</section>
+
+
+<section>
+  <h2>④ 价格趋势 — 机构 provider 单卡日中位 ($/hr)</h2>
+  <table class="data-table trend-table">
+    <thead>
+      <tr><th>GPU</th><th>On-Demand 趋势</th><th>最新</th><th>30D Δ</th><th>Spot 趋势</th><th>历史</th></tr>
+    </thead>
+    <tbody>
+<tr>
+  <th>H100 SXM</th>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#b91c1c" stroke-width="1.5" points="4.0,34.7 4.9,34.7 5.8,34.7 6.7,34.7 7.6,34.7 8.5,34.7 9.4,34.7 10.3,28.0 11.2,28.0 12.2,28.0 13.1,28.0 14.0,28.0 14.9,28.0 15.8,28.0 16.7,28.0 17.6,28.0 18.5,28.0 19.4,16.9 20.3,28.0 21.2,28.0 22.1,28.0 23.0,28.0 23.9,28.0 24.8,28.0 25.8,32.2 26.7,32.2 27.6,32.2 28.5,32.2 29.4,28.0 30.3,32.2 31.2,28.0 32.1,32.2 33.0,28.0 33.9,32.2 34.8,28.0 35.7,28.0 36.6,32.2 37.5,32.2 38.4,32.2 39.3,28.0 40.2,32.2 41.2,28.0 42.1,29.6 43.0,22.9 43.9,29.6 44.8,14.3 45.7,14.3 46.6,14.3 47.5,14.3 48.4,14.3 49.3,22.9 50.2,22.9 51.1,14.3 52.0,22.9 52.9,22.9 53.8,22.9 54.8,22.9 55.7,22.9 56.6,14.3 57.5,21.1 58.4,14.3 59.3,22.9 60.2,4.9 61.1,14.3 62.0,5.7 62.9,14.3 63.8,4.9 64.7,5.7 65.6,14.3 66.5,14.3 67.4,14.3 68.3,14.3 69.2,14.3 70.2,14.3 71.1,4.9 72.0,4.0 72.9,14.3 73.8,5.7 74.7,14.3 75.6,14.3 76.5,4.9 77.4,14.3 78.3,4.0 79.2,5.7 80.1,14.3 81.0,5.7 81.9,26.8 82.8,36.0 83.8,36.0 84.7,31.4 85.6,36.0 86.5,36.0 87.4,36.0 88.3,31.4 89.2,31.4 90.1,31.4 91.0,36.0 91.9,33.0 92.8,33.0 93.7,36.0 94.6,33.0 95.5,33.0 96.4,33.0 97.3,33.0 98.2,33.0 99.2,33.0 100.1,33.0 101.0,33.0 101.9,33.0 102.8,33.0 103.7,33.0 104.6,33.0 105.5,33.0 106.4,33.0 107.3,33.0 108.2,33.0 109.1,33.0 110.0,33.0 110.9,33.0 111.8,33.0 112.8,33.0 113.7,33.0 114.6,33.0 115.5,33.0 116.4,33.0 117.3,33.0 118.2,33.0 119.1,33.0 120.0,33.0 120.9,33.0 121.8,33.0 122.7,33.0 123.6,33.0 124.5,33.0 125.4,33.0 126.3,33.0 127.2,33.0 128.2,33.0 129.1,36.0 130.0,33.0 130.9,33.0 131.8,33.0 132.7,33.0 133.6,33.0 134.5,33.0 135.4,33.0 136.3,36.0 137.2,36.0 138.1,36.0 139.0,36.0 139.9,36.0 140.8,36.0 141.8,36.0 142.7,36.0 143.6,36.0 144.5,36.0 145.4,36.0 146.3,36.0 147.2,36.0 148.1,36.0 149.0,36.0 149.9,36.0 150.8,36.0 151.7,36.0 152.6,36.0 153.5,36.0 154.4,36.0 155.3,36.0 156.2,36.0 157.2,36.0 158.1,36.0 159.0,36.0 159.9,36.0 160.8,29.9 161.7,33.0 162.6,33.0 163.5,33.0 164.4,33.0 165.3,33.0 166.2,33.0 167.1,33.0 168.0,33.0 168.9,33.0 169.8,33.0 170.8,33.0 171.7,33.0 172.6,33.0 173.5,33.0 174.4,33.0 175.3,33.0 176.2,33.0 177.1,33.0 178.0,33.0 178.9,33.0 179.8,33.0 180.7,33.0 181.6,33.0 182.5,33.0 183.4,33.0 184.3,33.0 185.2,33.0 186.2,31.0 187.1,31.0 188.0,31.0 188.9,31.0 189.8,31.0 190.7,31.0 191.6,31.0 192.5,31.0 193.4,31.0 194.3,31.0 195.2,31.0 196.1,31.0 197.0,31.0 197.9,31.0 198.8,31.0 199.8,31.0 200.7,31.0 201.6,27.3 202.5,27.3 203.4,27.3 204.3,27.3 205.2,27.3 206.1,27.3 207.0,27.3 207.9,27.3 208.8,27.3 209.7,27.3 210.6,27.3 211.5,27.3 212.4,27.3 213.3,27.3 214.2,27.3 215.2,27.3 216.1,26.8 217.0,26.8 217.9,26.8 218.8,26.8 219.7,23.9 220.6,25.9 221.5,25.9 222.4,23.9 223.3,23.9 224.2,22.3 225.1,25.9 226.0,26.8 226.9,32.5 227.8,32.5 228.8,32.5 229.7,32.5 230.6,32.5 231.5,32.5 232.4,32.5 233.3,32.5 234.2,32.5 235.1,32.5 236.0,32.5"/>
+      <circle cx="236.0" cy="32.5" r="2.5" fill="#b91c1c"/>
+    </svg></td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">$3.34</td>
+  <td class="down">-13.2%<sup class="src-tag">vs 30D · on-demand</sup></td>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#0e7490" stroke-width="1.5" points="4.0,5.8 5.2,5.8 6.4,5.8 7.6,5.8 8.8,5.8 10.0,5.8 11.2,5.8 12.4,14.8 13.6,14.8 14.8,14.8 16.0,8.8 17.2,8.8 18.4,8.8 19.6,11.9 20.8,11.9 22.0,11.9 23.2,11.9 24.4,11.9 25.6,11.9 26.8,11.9 28.0,11.9 29.2,11.9 30.4,11.9 31.6,11.9 32.8,36.0 34.1,25.0 35.3,23.6 36.5,15.7 37.7,4.0 38.9,9.8 40.1,4.0 41.3,15.7 42.5,4.0 43.7,15.4 44.9,9.6 46.1,15.2 47.3,14.2 48.5,14.8 49.7,4.3 50.9,4.2 52.1,4.0 53.3,9.2 54.5,19.7 55.7,14.5 56.9,16.9 58.1,9.2 59.3,9.3 60.5,4.0 61.7,4.0 62.9,8.2 64.1,6.9 65.3,15.6 66.5,11.3 67.7,13.9 68.9,11.1 70.1,8.2 71.3,13.9 72.5,14.7 73.7,11.4 74.9,17.2 76.1,17.1 77.3,14.8 78.5,14.4 79.7,15.0 80.9,8.2 82.1,14.7 83.3,14.5 84.5,8.2 85.7,14.4 86.9,14.5 88.1,24.4 89.3,23.6 90.5,13.8 91.8,13.9 93.0,13.9 94.2,13.9 95.4,13.9 96.6,13.9 97.8,4.0 99.0,20.7 100.2,13.7 101.4,13.4 102.6,8.7 103.8,8.7 105.0,13.4 106.2,13.4 107.4,13.7 108.6,13.4 109.8,13.4 111.0,13.5 112.2,13.4 113.4,13.7 114.6,14.8 115.8,12.4 117.0,12.2 118.2,7.9 119.4,7.7 120.6,12.2 121.8,11.5 123.0,11.8 124.2,7.8 125.4,11.5 126.6,11.4 127.8,4.0 129.0,10.8 130.2,7.3 131.4,4.0 132.6,11.1 133.8,4.0 135.0,4.3 136.2,4.3 137.4,4.2 138.6,7.1 139.8,19.3 141.0,7.0 142.2,7.0 143.4,4.3 144.6,10.3 145.8,10.2 147.0,6.8 148.2,4.3 149.5,8.5 150.7,4.0 151.9,8.5 153.1,4.0 154.3,4.0 155.5,4.2 156.7,4.3 157.9,13.5 159.1,4.3 160.3,13.9 161.5,9.3 162.7,4.3 163.9,13.0 165.1,9.0 166.3,4.0 167.5,16.2 168.7,15.7 169.9,4.0 171.1,8.5 172.3,8.5 173.5,8.5 174.7,8.5 175.9,4.0 177.1,4.2 178.3,4.0 179.5,9.0 180.7,4.2 181.9,4.2 183.1,4.0 184.3,4.2 185.5,4.2 186.7,12.4 187.9,11.9 189.1,4.0 190.3,4.6 191.5,4.6 192.7,4.6 193.9,4.0 195.1,4.6 196.3,5.6 197.5,4.2 198.7,4.0 199.9,4.0 201.1,13.8 202.3,4.6 203.5,9.5 204.7,4.0 205.9,4.2 207.2,4.2 208.4,11.6 209.6,10.9 210.8,4.2 212.0,4.2 213.2,4.0 214.4,26.8 215.6,26.7 216.8,16.3 218.0,19.1 219.2,33.2 220.4,25.3 221.6,25.6 222.8,4.3 224.0,28.4 225.2,18.7 226.4,15.2 227.6,18.2 228.8,16.3 230.0,16.3 231.2,18.2 232.4,23.3 233.6,16.1 234.8,33.4 236.0,18.8"/>
+      <circle cx="236.0" cy="18.8" r="2.5" fill="#0e7490"/>
+    </svg></td>
+  <td class="muted" style="font-size:11px;">257d · 02-11→11-05</td>
+</tr>
+<tr>
+  <th>H200</th>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#1f3a5f" stroke-width="1.5" points="4.0,26.7 4.9,26.7 5.8,26.7 6.7,26.7 7.6,26.7 8.5,26.7 9.4,26.7 10.3,26.7 11.2,26.7 12.2,26.7 13.1,26.7 14.0,26.7 14.9,26.7 15.8,26.7 16.7,26.7 17.6,26.7 18.5,26.7 19.4,26.7 20.3,26.7 21.2,26.7 22.1,26.7 23.0,26.7 23.9,26.7 24.8,26.7 25.8,26.7 26.7,26.7 27.6,26.7 28.5,26.7 29.4,26.1 30.3,26.7 31.2,26.1 32.1,26.7 33.0,26.1 33.9,26.7 34.8,26.7 35.7,26.1 36.6,26.7 37.5,26.7 38.4,26.7 39.3,26.1 40.2,26.1 41.2,26.1 42.1,26.7 43.0,26.1 43.9,26.7 44.8,26.1 45.7,26.7 46.6,26.7 47.5,26.1 48.4,26.1 49.3,26.7 50.2,26.7 51.1,26.1 52.0,26.7 52.9,26.7 53.8,26.1 54.8,26.7 55.7,26.7 56.6,26.1 57.5,26.7 58.4,26.1 59.3,26.7 60.2,26.1 61.1,26.7 62.0,26.1 62.9,26.7 63.8,26.7 64.7,26.7 65.6,26.7 66.5,26.7 67.4,26.7 68.3,26.7 69.2,26.7 70.2,26.7 71.1,26.7 72.0,26.7 72.9,26.7 73.8,26.7 74.7,26.7 75.6,26.7 76.5,26.7 77.4,26.7 78.3,26.7 79.2,26.7 80.1,26.7 81.0,26.7 81.9,26.7 82.8,25.6 83.8,25.6 84.7,25.6 85.6,25.6 86.5,25.6 87.4,25.6 88.3,36.0 89.2,25.6 90.1,25.6 91.0,25.6 91.9,25.6 92.8,25.6 93.7,25.6 94.6,25.6 95.5,25.6 96.4,25.6 97.3,25.6 98.2,25.6 99.2,25.6 100.1,25.6 101.0,25.6 101.9,25.6 102.8,25.6 103.7,25.6 104.6,25.6 105.5,25.6 106.4,25.6 107.3,25.6 108.2,25.6 109.1,25.6 110.0,25.6 110.9,25.6 111.8,25.6 112.8,25.6 113.7,25.6 114.6,25.6 115.5,25.6 116.4,25.6 117.3,25.6 118.2,25.6 119.1,25.6 120.0,25.6 120.9,25.6 121.8,25.6 122.7,25.6 123.6,25.6 124.5,25.6 125.4,25.6 126.3,25.6 127.2,25.6 128.2,25.6 129.1,25.6 130.0,25.6 130.9,25.6 131.8,25.6 132.7,25.6 133.6,25.6 134.5,25.6 135.4,25.6 136.3,25.6 137.2,25.6 138.1,25.6 139.0,25.6 139.9,25.6 140.8,25.6 141.8,25.6 142.7,25.6 143.6,25.6 144.5,25.6 145.4,25.6 146.3,25.6 147.2,25.6 148.1,25.6 149.0,25.6 149.9,25.6 150.8,25.6 151.7,25.6 152.6,25.6 153.5,25.6 154.4,25.6 155.3,25.6 156.2,25.6 157.2,25.6 158.1,25.6 159.0,25.6 159.9,25.6 160.8,25.6 161.7,25.6 162.6,25.6 163.5,25.6 164.4,25.6 165.3,25.6 166.2,25.6 167.1,25.6 168.0,25.6 168.9,25.6 169.8,25.6 170.8,25.6 171.7,25.6 172.6,25.6 173.5,25.6 174.4,25.6 175.3,25.6 176.2,25.6 177.1,25.6 178.0,25.6 178.9,25.6 179.8,25.6 180.7,25.6 181.6,25.6 182.5,25.6 183.4,25.6 184.3,25.6 185.2,25.6 186.2,25.6 187.1,25.6 188.0,25.6 188.9,25.6 189.8,25.6 190.7,25.6 191.6,25.6 192.5,25.6 193.4,25.6 194.3,25.6 195.2,25.6 196.1,25.6 197.0,25.6 197.9,25.6 198.8,25.6 199.8,25.6 200.7,25.6 201.6,14.7 202.5,14.7 203.4,14.7 204.3,14.7 205.2,14.7 206.1,14.7 207.0,14.7 207.9,14.7 208.8,14.7 209.7,14.7 210.6,14.7 211.5,14.7 212.4,14.7 213.3,14.7 214.2,14.7 215.2,14.7 216.1,14.7 217.0,14.7 217.9,14.7 218.8,14.7 219.7,4.0 220.6,5.3 221.5,5.3 222.4,4.7 223.3,4.7 224.2,4.7 225.1,15.5 226.0,15.5 226.9,25.6 227.8,25.6 228.8,25.6 229.7,25.6 230.6,25.6 231.5,25.6 232.4,25.6 233.3,25.6 234.2,25.6 235.1,32.2 236.0,25.6"/>
+      <circle cx="236.0" cy="25.6" r="2.5" fill="#1f3a5f"/>
+    </svg></td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">$3.59</td>
+  <td class="down">-20.2%<sup class="src-tag">vs 30D · on-demand</sup></td>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#0e7490" stroke-width="1.5" points="4.0,19.9 5.2,19.9 6.3,19.9 7.5,19.9 8.6,19.9 9.8,19.9 11.0,19.9 12.1,19.9 13.3,19.9 14.4,19.9 15.6,19.9 16.8,19.9 17.9,19.9 19.1,19.9 20.2,19.9 21.4,19.9 22.6,19.9 23.7,19.9 24.9,19.9 26.0,19.9 27.2,19.9 28.4,19.9 29.5,19.9 30.7,19.9 31.8,19.9 33.0,19.9 34.2,19.9 35.3,19.9 36.5,19.9 37.6,19.9 38.8,19.9 40.0,19.9 41.1,19.9 42.3,36.0 43.4,23.0 44.6,23.1 45.8,20.8 46.9,13.9 48.1,11.5 49.2,11.5 50.4,19.7 51.6,11.5 52.7,26.3 53.9,27.2 55.0,22.7 56.2,10.9 57.4,29.5 58.5,16.5 59.7,23.1 60.8,19.8 62.0,19.8 63.2,16.5 64.3,19.8 65.5,16.5 66.6,13.4 67.8,18.3 69.0,21.6 70.1,20.1 71.3,14.3 72.4,15.7 73.6,16.5 74.8,16.5 75.9,16.5 77.1,16.5 78.2,17.2 79.4,16.5 80.6,16.7 81.7,17.4 82.9,18.9 84.0,20.4 85.2,20.5 86.4,19.6 87.5,18.2 88.7,20.1 89.8,20.1 91.0,16.5 92.2,23.2 93.3,23.3 94.5,19.2 95.6,16.1 96.8,21.5 98.0,16.5 99.1,22.1 100.3,15.3 101.4,29.9 102.6,13.8 103.8,9.2 104.9,15.0 106.1,18.4 107.2,6.2 108.4,21.1 109.6,21.0 110.7,21.0 111.9,29.9 113.0,18.5 114.2,18.9 115.4,20.5 116.5,16.2 117.7,21.0 118.8,28.5 120.0,11.0 121.2,14.9 122.3,15.6 123.5,12.6 124.6,12.6 125.8,18.8 127.0,14.0 128.1,6.2 129.3,29.9 130.4,6.2 131.6,31.4 132.8,14.0 133.9,18.8 135.1,18.1 136.2,18.8 137.4,18.8 138.6,18.8 139.7,18.8 140.9,18.4 142.0,8.2 143.2,8.7 144.4,8.2 145.5,8.7 146.7,8.7 147.8,8.2 149.0,8.2 150.2,8.7 151.3,8.2 152.5,9.4 153.6,8.2 154.8,8.2 156.0,9.4 157.1,8.2 158.3,8.2 159.4,8.2 160.6,8.2 161.8,16.5 162.9,8.2 164.1,8.2 165.2,8.2 166.4,8.2 167.6,8.2 168.7,8.2 169.9,8.2 171.0,8.2 172.2,8.2 173.4,8.2 174.5,8.2 175.7,8.2 176.8,17.8 178.0,8.2 179.2,8.2 180.3,10.9 181.5,8.2 182.6,8.2 183.8,8.2 185.0,8.2 186.1,8.8 187.3,8.8 188.4,14.0 189.6,13.6 190.8,8.2 191.9,4.0 193.1,8.2 194.2,17.8 195.4,8.2 196.6,8.2 197.7,8.2 198.9,13.6 200.0,8.2 201.2,17.8 202.4,9.6 203.5,13.6 204.7,9.6 205.8,20.1 207.0,8.2 208.2,8.2 209.3,18.3 210.5,8.2 211.6,7.6 212.8,27.9 214.0,31.4 215.1,27.9 216.3,7.6 217.4,7.6 218.6,23.2 219.8,7.6 220.9,14.6 222.1,16.5 223.2,9.8 224.4,10.2 225.6,18.0 226.7,18.9 227.9,18.9 229.0,25.3 230.2,28.5 231.4,24.0 232.5,24.0 233.7,18.9 234.8,22.5 236.0,23.7"/>
+      <circle cx="236.0" cy="23.7" r="2.5" fill="#0e7490"/>
+    </svg></td>
+  <td class="muted" style="font-size:11px;">257d · 02-11→11-05</td>
+</tr>
+<tr>
+  <th>B200</th>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#b91c1c" stroke-width="1.5" points="4.0,36.0 4.9,36.0 5.8,36.0 6.7,36.0 7.6,36.0 8.5,36.0 9.4,36.0 10.3,33.7 11.2,33.7 12.2,33.7 13.1,33.7 14.0,33.7 14.9,33.7 15.8,33.7 16.7,33.7 17.6,33.7 18.5,33.7 19.4,33.7 20.3,33.7 21.2,33.7 22.1,33.7 23.0,33.7 23.9,33.7 24.8,33.7 25.8,33.7 26.7,33.7 27.6,33.7 28.5,33.7 29.4,30.6 30.3,33.7 31.2,30.6 32.1,33.7 33.0,30.6 33.9,33.7 34.8,33.7 35.7,30.6 36.6,33.7 37.5,33.7 38.4,33.7 39.3,30.6 40.2,30.6 41.2,30.6 42.1,33.7 43.0,25.7 43.9,33.7 44.8,25.7 45.7,33.7 46.6,33.7 47.5,25.7 48.4,25.7 49.3,33.7 50.2,33.7 51.1,25.7 52.0,33.7 52.9,33.7 53.8,25.7 54.8,33.7 55.7,33.7 56.6,25.7 57.5,33.7 58.4,25.7 59.3,33.7 60.2,25.7 61.1,33.7 62.0,25.7 62.9,33.7 63.8,25.7 64.7,33.7 65.6,33.7 66.5,33.7 67.4,33.7 68.3,33.7 69.2,33.7 70.2,33.7 71.1,25.7 72.0,25.7 72.9,33.7 73.8,33.7 74.7,33.7 75.6,33.7 76.5,33.7 77.4,33.7 78.3,25.7 79.2,33.7 80.1,33.7 81.0,33.7 81.9,31.1 82.8,31.2 83.8,31.2 84.7,31.2 85.6,31.2 86.5,31.2 87.4,31.2 88.3,31.2 89.2,31.2 90.1,31.2 91.0,31.2 91.9,29.5 92.8,29.0 93.7,29.5 94.6,29.0 95.5,29.0 96.4,29.0 97.3,29.5 98.2,29.0 99.2,29.0 100.1,29.0 101.0,29.0 101.9,29.0 102.8,29.0 103.7,29.0 104.6,29.5 105.5,29.5 106.4,29.0 107.3,29.0 108.2,29.0 109.1,29.0 110.0,29.0 110.9,29.0 111.8,29.0 112.8,29.0 113.7,29.0 114.6,29.0 115.5,29.0 116.4,29.0 117.3,29.0 118.2,29.0 119.1,29.0 120.0,29.0 120.9,29.0 121.8,29.0 122.7,29.0 123.6,29.0 124.5,29.0 125.4,29.0 126.3,29.0 127.2,29.0 128.2,29.0 129.1,29.5 130.0,29.0 130.9,29.0 131.8,29.0 132.7,29.0 133.6,29.0 134.5,29.0 135.4,29.0 136.3,29.0 137.2,29.0 138.1,29.0 139.0,29.0 139.9,29.0 140.8,29.0 141.8,29.5 142.7,29.0 143.6,29.0 144.5,29.0 145.4,29.5 146.3,29.0 147.2,29.0 148.1,29.5 149.0,29.5 149.9,29.5 150.8,29.0 151.7,29.0 152.6,29.0 153.5,29.0 154.4,29.0 155.3,29.5 156.2,29.0 157.2,29.0 158.1,29.5 159.0,29.0 159.9,29.0 160.8,24.1 161.7,24.1 162.6,24.1 163.5,24.1 164.4,24.1 165.3,24.1 166.2,24.1 167.1,24.1 168.0,24.1 168.9,24.1 169.8,19.8 170.8,24.1 171.7,24.1 172.6,19.8 173.5,19.8 174.4,24.1 175.3,24.1 176.2,24.1 177.1,24.1 178.0,24.1 178.9,24.1 179.8,24.1 180.7,24.1 181.6,24.1 182.5,24.1 183.4,24.1 184.3,24.1 185.2,24.1 186.2,24.1 187.1,24.1 188.0,24.1 188.9,24.1 189.8,24.1 190.7,19.8 191.6,19.8 192.5,19.8 193.4,19.8 194.3,24.1 195.2,24.1 196.1,24.1 197.0,24.1 197.9,24.1 198.8,24.1 199.8,24.1 200.7,24.1 201.6,18.7 202.5,18.7 203.4,18.7 204.3,18.7 205.2,19.2 206.1,19.2 207.0,18.7 207.9,18.7 208.8,19.2 209.7,18.7 210.6,19.2 211.5,19.2 212.4,19.2 213.3,18.7 214.2,19.2 215.2,19.2 216.1,15.9 217.0,17.3 217.9,15.9 218.8,15.9 219.7,10.0 220.6,12.7 221.5,12.7 222.4,6.8 223.3,6.8 224.2,4.0 225.1,18.7 226.0,18.7 226.9,23.6 227.8,23.6 228.8,23.6 229.7,23.6 230.6,18.7 231.5,23.6 232.4,23.6 233.3,18.7 234.2,18.7 235.1,18.7 236.0,7.8"/>
+      <circle cx="236.0" cy="7.8" r="2.5" fill="#b91c1c"/>
+    </svg></td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">$7.89</td>
+  <td class="up">+15.4%<sup class="src-tag">vs 30D · on-demand</sup></td>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#b91c1c" stroke-width="1.5" points="4.0,31.3 5.1,31.3 6.3,31.3 7.4,31.3 8.6,31.3 9.7,31.3 10.9,31.3 12.0,31.3 13.2,31.3 14.3,31.3 15.5,31.3 16.6,31.3 17.8,31.3 18.9,31.3 20.1,31.3 21.2,31.3 22.4,31.3 23.5,31.3 24.7,31.3 25.8,31.3 27.0,31.3 28.1,31.3 29.3,31.3 30.4,31.3 31.6,31.3 32.7,31.3 33.9,31.3 35.0,31.3 36.2,31.3 37.3,31.3 38.5,31.3 39.6,31.3 40.8,31.3 41.9,31.3 43.0,31.3 44.2,31.3 45.3,31.3 46.5,31.3 47.6,31.3 48.8,31.3 49.9,31.3 51.1,31.3 52.2,31.3 53.4,31.3 54.5,31.3 55.7,31.3 56.8,31.3 58.0,31.3 59.1,31.3 60.3,33.4 61.4,35.4 62.6,31.3 63.7,31.3 64.9,31.3 66.0,31.2 67.2,29.6 68.3,29.6 69.5,32.8 70.6,32.0 71.8,20.0 72.9,32.8 74.1,26.4 75.2,32.0 76.4,35.5 77.5,29.6 78.7,32.4 79.8,35.2 81.0,30.3 82.1,30.3 83.2,30.3 84.4,30.3 85.5,26.2 86.7,26.2 87.8,26.2 89.0,26.2 90.1,26.7 91.3,26.7 92.4,26.7 93.6,26.7 94.7,32.0 95.9,32.0 97.0,34.7 98.2,34.7 99.3,34.7 100.5,34.7 101.6,34.7 102.8,34.7 103.9,29.1 105.1,29.7 106.2,30.7 107.4,34.7 108.5,34.7 109.7,34.7 110.8,34.7 112.0,34.7 113.1,28.6 114.3,29.1 115.4,29.1 116.6,28.6 117.7,28.6 118.9,29.1 120.0,29.4 121.1,28.0 122.3,26.7 123.4,26.7 124.6,28.0 125.7,26.9 126.9,28.0 128.0,28.0 129.2,14.7 130.3,26.7 131.5,12.0 132.6,12.0 133.8,12.0 134.9,22.7 136.1,22.7 137.2,22.7 138.4,22.7 139.5,20.5 140.7,9.3 141.8,20.0 143.0,20.0 144.1,20.0 145.3,15.2 146.4,15.2 147.6,15.2 148.7,20.0 149.9,20.0 151.0,20.0 152.2,20.0 153.3,21.2 154.5,21.2 155.6,21.2 156.8,21.2 157.9,21.2 159.0,21.2 160.2,21.2 161.3,21.2 162.5,21.2 163.6,22.1 164.8,21.2 165.9,21.2 167.1,20.6 168.2,21.2 169.4,21.2 170.5,21.2 171.7,21.2 172.8,21.2 174.0,21.2 175.1,21.2 176.3,21.2 177.4,21.2 178.6,21.2 179.7,21.2 180.9,21.2 182.0,21.2 183.2,21.2 184.3,21.2 185.5,21.2 186.6,21.2 187.8,21.2 188.9,21.2 190.1,20.6 191.2,21.2 192.4,18.2 193.5,18.2 194.7,21.2 195.8,21.2 197.0,21.2 198.1,21.2 199.2,21.2 200.4,21.2 201.5,21.2 202.7,21.2 203.8,21.2 205.0,21.2 206.1,17.9 207.3,21.2 208.4,21.2 209.6,21.2 210.7,21.2 211.9,17.9 213.0,21.2 214.2,21.2 215.3,21.2 216.5,21.2 217.6,21.2 218.8,21.2 219.9,21.2 221.1,21.2 222.2,21.2 223.4,16.3 224.5,36.0 225.7,16.3 226.8,16.6 228.0,16.3 229.1,16.3 230.3,21.3 231.4,9.3 232.6,25.3 233.7,21.3 234.9,9.3 236.0,4.0"/>
+      <circle cx="236.0" cy="4.0" r="2.5" fill="#b91c1c"/>
+    </svg></td>
+  <td class="muted" style="font-size:11px;">257d · 02-11→11-05</td>
+</tr>
+<tr>
+  <th>GB200 NVL72</th>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#1f3a5f" stroke-width="1.5" points="4.0,36.0 5.5,36.0 6.9,36.0 8.4,36.0 9.9,36.0 11.3,36.0 12.8,36.0 14.3,36.0 15.7,36.0 17.2,36.0 18.7,36.0 20.2,36.0 21.6,36.0 23.1,36.0 24.6,36.0 26.0,36.0 27.5,36.0 29.0,36.0 30.4,36.0 31.9,36.0 33.4,36.0 34.8,36.0 36.3,36.0 37.8,36.0 39.2,36.0 40.7,36.0 42.2,36.0 43.6,36.0 45.1,36.0 46.6,36.0 48.1,36.0 49.5,36.0 51.0,36.0 52.5,36.0 53.9,36.0 55.4,36.0 56.9,36.0 58.3,36.0 59.8,36.0 61.3,36.0 62.7,36.0 64.2,36.0 65.7,36.0 67.1,36.0 68.6,36.0 70.1,36.0 71.5,36.0 73.0,36.0 74.5,36.0 75.9,36.0 77.4,36.0 78.9,36.0 80.4,36.0 81.8,36.0 83.3,36.0 84.8,36.0 86.2,36.0 87.7,36.0 89.2,36.0 90.6,36.0 92.1,36.0 93.6,36.0 95.0,36.0 96.5,36.0 98.0,36.0 99.4,36.0 100.9,36.0 102.4,36.0 103.8,36.0 105.3,36.0 106.8,36.0 108.3,36.0 109.7,36.0 111.2,36.0 112.7,36.0 114.1,36.0 115.6,36.0 117.1,36.0 118.5,36.0 120.0,36.0 121.5,36.0 122.9,36.0 124.4,36.0 125.9,36.0 127.3,36.0 128.8,36.0 130.3,36.0 131.7,36.0 133.2,36.0 134.7,36.0 136.2,36.0 137.6,36.0 139.1,36.0 140.6,36.0 142.0,36.0 143.5,36.0 145.0,36.0 146.4,36.0 147.9,36.0 149.4,36.0 150.8,36.0 152.3,36.0 153.8,36.0 155.2,36.0 156.7,36.0 158.2,36.0 159.6,36.0 161.1,36.0 162.6,36.0 164.1,36.0 165.5,36.0 167.0,36.0 168.5,36.0 169.9,36.0 171.4,36.0 172.9,36.0 174.3,36.0 175.8,36.0 177.3,36.0 178.7,36.0 180.2,36.0 181.7,36.0 183.1,36.0 184.6,36.0 186.1,36.0 187.5,36.0 189.0,36.0 190.5,36.0 191.9,36.0 193.4,36.0 194.9,36.0 196.4,36.0 197.8,36.0 199.3,36.0 200.8,36.0 202.2,36.0 203.7,36.0 205.2,36.0 206.6,36.0 208.1,36.0 209.6,36.0 211.0,36.0 212.5,36.0 214.0,36.0 215.4,36.0 216.9,36.0 218.4,36.0 219.8,36.0 221.3,36.0 222.8,36.0 224.3,36.0 225.7,36.0 227.2,36.0 228.7,36.0 230.1,4.0 231.6,4.0 233.1,4.0 234.5,4.0 236.0,36.0"/>
+      <circle cx="236.0" cy="36.0" r="2.5" fill="#1f3a5f"/>
+    </svg></td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">$4.29</td>
+  <td class="muted">+0.0%<sup class="src-tag">vs 30D · on-demand</sup></td>
+  <td><span class="muted" style="font-size:11px;">数据不足</span></td>
+  <td class="muted" style="font-size:11px;">160d · 05-08→11-04</td>
+</tr>
+<tr>
+  <th>MI300X</th>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#b91c1c" stroke-width="1.5" points="4.0,36.0 5.2,36.0 6.4,36.0 7.6,36.0 8.9,36.0 10.1,36.0 11.3,36.0 12.5,36.0 13.7,36.0 14.9,36.0 16.1,36.0 17.4,36.0 18.6,36.0 19.8,36.0 21.0,36.0 22.2,36.0 23.4,36.0 24.6,36.0 25.9,36.0 27.1,36.0 28.3,36.0 29.5,36.0 30.7,23.4 31.9,10.8 33.2,10.8 34.4,10.8 35.6,10.8 36.8,10.8 38.0,10.8 39.2,10.8 40.4,10.8 41.7,10.8 42.9,10.8 44.1,10.8 45.3,10.8 46.5,10.8 47.7,10.8 48.9,10.8 50.2,10.8 51.4,10.8 52.6,10.8 53.8,10.8 55.0,10.8 56.2,10.8 57.4,10.8 58.7,23.4 59.9,10.8 61.1,23.4 62.3,10.8 63.5,23.4 64.7,23.4 65.9,10.8 67.2,10.8 68.4,10.8 69.6,10.8 70.8,10.8 72.0,23.4 73.2,23.4 74.5,10.8 75.7,23.4 76.9,10.8 78.1,23.4 79.3,10.8 80.5,7.4 81.7,21.7 83.0,7.4 84.2,7.4 85.4,7.4 86.6,7.4 87.8,7.4 89.0,7.4 90.2,7.4 91.5,21.7 92.7,21.7 93.9,7.4 95.1,7.4 96.3,7.4 97.5,7.4 98.7,21.7 100.0,21.7 101.2,21.7 102.4,21.7 103.6,7.4 104.8,7.4 106.0,21.7 107.2,21.7 108.5,7.4 109.7,7.4 110.9,7.4 112.1,7.4 113.3,7.4 114.5,7.4 115.7,7.4 117.0,21.7 118.2,21.7 119.4,4.0 120.6,4.0 121.8,4.0 123.0,4.0 124.3,4.0 125.5,20.0 126.7,4.0 127.9,4.0 129.1,4.0 130.3,4.0 131.5,4.0 132.8,4.0 134.0,4.0 135.2,4.0 136.4,4.0 137.6,4.0 138.8,20.0 140.0,4.0 141.3,20.0 142.5,20.0 143.7,20.0 144.9,4.0 146.1,20.0 147.3,4.0 148.5,4.0 149.8,4.0 151.0,20.0 152.2,20.0 153.4,20.0 154.6,20.0 155.8,20.0 157.0,4.0 158.3,4.0 159.5,4.0 160.7,4.0 161.9,20.0 163.1,4.0 164.3,4.0 165.5,4.0 166.8,4.0 168.0,20.0 169.2,4.0 170.4,4.0 171.6,4.0 172.8,4.0 174.1,20.0 175.3,20.0 176.5,20.0 177.7,4.0 178.9,4.0 180.1,4.0 181.3,4.0 182.6,20.0 183.8,4.0 185.0,4.0 186.2,4.0 187.4,4.0 188.6,4.0 189.8,20.0 191.1,4.0 192.3,4.0 193.5,4.0 194.7,20.0 195.9,4.0 197.1,4.0 198.3,4.0 199.6,4.0 200.8,4.0 202.0,4.0 203.2,4.0 204.4,4.0 205.6,20.0 206.8,4.0 208.1,4.0 209.3,4.0 210.5,4.0 211.7,4.0 212.9,20.0 214.1,20.0 215.4,4.0 216.6,4.0 217.8,4.0 219.0,4.0 220.2,4.0 221.4,4.0 222.6,4.0 223.9,4.0 225.1,4.0 226.3,4.0 227.5,4.0 228.7,4.0 229.9,4.0 231.1,20.0 232.4,20.0 233.6,4.0 234.8,4.0 236.0,4.0"/>
+      <circle cx="236.0" cy="4.0" r="2.5" fill="#b91c1c"/>
+    </svg></td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">$2.39</td>
+  <td class="muted">+0.0%<sup class="src-tag">vs 30D · on-demand</sup></td>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#1f3a5f" stroke-width="1.5" points="4.0,36.0 7.9,36.0 11.7,36.0 15.6,36.0 19.5,36.0 23.3,36.0 27.2,36.0 31.1,36.0 34.9,36.0 38.8,36.0 42.7,36.0 46.5,36.0 50.4,36.0 54.3,36.0 58.1,36.0 62.0,36.0 65.9,36.0 69.7,36.0 73.6,36.0 77.5,36.0 81.3,36.0 85.2,36.0 89.1,36.0 92.9,36.0 96.8,36.0 100.7,36.0 104.5,36.0 108.4,36.0 112.3,36.0 116.1,36.0 120.0,36.0 123.9,36.0 127.7,36.0 131.6,36.0 135.5,36.0 139.3,36.0 143.2,36.0 147.1,36.0 150.9,36.0 154.8,36.0 158.7,36.0 162.5,36.0 166.4,36.0 170.3,36.0 174.1,36.0 178.0,36.0 181.9,36.0 185.7,36.0 189.6,36.0 193.5,36.0 197.3,36.0 201.2,36.0 205.1,36.0 208.9,36.0 212.8,36.0 216.7,36.0 220.5,36.0 224.4,36.0 228.3,36.0 232.1,36.0 236.0,36.0"/>
+      <circle cx="236.0" cy="36.0" r="2.5" fill="#1f3a5f"/>
+    </svg></td>
+  <td class="muted" style="font-size:11px;">192d · 04-16→11-05</td>
+</tr>
+<tr>
+  <th>A100 SXM 80GB</th>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#0e7490" stroke-width="1.5" points="4.0,18.2 4.9,18.2 5.8,18.2 6.7,18.2 7.6,18.2 8.5,18.2 9.4,18.2 10.3,18.2 11.2,18.2 12.2,18.2 13.1,18.2 14.0,18.2 14.9,18.2 15.8,18.2 16.7,18.2 17.6,18.2 18.5,18.2 19.4,18.2 20.3,18.2 21.2,18.2 22.1,18.2 23.0,18.2 23.9,18.2 24.8,18.2 25.8,18.2 26.7,18.2 27.6,18.2 28.5,18.2 29.4,14.1 30.3,18.2 31.2,14.1 32.1,18.2 33.0,14.1 33.9,18.2 34.8,18.2 35.7,14.1 36.6,18.2 37.5,18.2 38.4,18.2 39.3,14.1 40.2,14.1 41.2,14.1 42.1,18.2 43.0,14.1 43.9,18.2 44.8,14.1 45.7,18.2 46.6,18.2 47.5,14.1 48.4,14.1 49.3,18.2 50.2,18.2 51.1,14.1 52.0,18.2 52.9,18.2 53.8,14.1 54.8,18.2 55.7,18.2 56.6,14.1 57.5,18.2 58.4,18.2 59.3,18.2 60.2,14.1 61.1,4.0 62.0,14.1 62.9,18.2 63.8,14.1 64.7,18.2 65.6,18.2 66.5,18.2 67.4,18.2 68.3,18.2 69.2,18.2 70.2,18.2 71.1,14.1 72.0,14.1 72.9,18.2 73.8,18.2 74.7,18.2 75.6,18.2 76.5,14.1 77.4,18.2 78.3,14.1 79.2,4.0 80.1,18.2 81.0,18.2 81.9,29.7 82.8,35.1 83.8,35.1 84.7,35.1 85.6,35.1 86.5,35.1 87.4,35.1 88.3,35.1 89.2,35.1 90.1,35.1 91.0,36.0 91.9,35.1 92.8,31.1 93.7,35.1 94.6,35.1 95.5,35.1 96.4,35.1 97.3,35.1 98.2,35.1 99.2,35.1 100.1,35.1 101.0,35.1 101.9,35.1 102.8,35.1 103.7,35.1 104.6,35.1 105.5,35.1 106.4,35.1 107.3,35.1 108.2,35.1 109.1,35.1 110.0,35.1 110.9,35.1 111.8,35.1 112.8,35.1 113.7,35.1 114.6,35.1 115.5,35.1 116.4,35.1 117.3,35.1 118.2,35.1 119.1,35.1 120.0,35.1 120.9,35.1 121.8,35.1 122.7,35.1 123.6,35.1 124.5,35.1 125.4,35.1 126.3,35.1 127.2,35.1 128.2,35.1 129.1,35.1 130.0,35.1 130.9,35.1 131.8,35.1 132.7,35.1 133.6,35.1 134.5,35.1 135.4,35.1 136.3,35.1 137.2,35.1 138.1,35.1 139.0,35.1 139.9,35.1 140.8,35.1 141.8,35.1 142.7,35.1 143.6,35.1 144.5,35.1 145.4,35.1 146.3,35.1 147.2,35.1 148.1,35.1 149.0,35.1 149.9,35.1 150.8,35.1 151.7,35.1 152.6,35.1 153.5,35.1 154.4,35.1 155.3,35.1 156.2,35.1 157.2,35.1 158.1,35.1 159.0,35.1 159.9,35.1 160.8,33.4 161.7,33.4 162.6,33.4 163.5,33.4 164.4,33.4 165.3,33.4 166.2,33.4 167.1,33.4 168.0,33.4 168.9,33.4 169.8,33.4 170.8,33.4 171.7,33.4 172.6,33.4 173.5,33.4 174.4,33.4 175.3,33.4 176.2,33.4 177.1,33.4 178.0,33.4 178.9,33.4 179.8,33.4 180.7,33.4 181.6,33.4 182.5,33.4 183.4,33.4 184.3,33.4 185.2,33.4 186.2,33.4 187.1,33.4 188.0,33.4 188.9,33.4 189.8,33.4 190.7,33.4 191.6,33.4 192.5,33.4 193.4,33.4 194.3,33.4 195.2,33.4 196.1,33.4 197.0,33.4 197.9,33.4 198.8,33.4 199.8,33.4 200.7,33.4 201.6,33.4 202.5,33.4 203.4,33.4 204.3,33.4 205.2,33.4 206.1,33.4 207.0,33.4 207.9,33.4 208.8,33.4 209.7,33.4 210.6,33.4 211.5,33.4 212.4,33.4 213.3,33.4 214.2,33.4 215.2,33.4 216.1,29.9 217.0,29.9 217.9,29.9 218.8,29.9 219.7,21.0 220.6,29.9 221.5,29.9 222.4,29.9 223.3,29.9 224.2,25.5 225.1,29.9 226.0,29.9 226.9,33.4 227.8,33.4 228.8,33.4 229.7,33.4 230.6,33.4 231.5,33.4 232.4,33.4 233.3,29.9 234.2,29.9 235.1,29.9 236.0,33.4"/>
+      <circle cx="236.0" cy="33.4" r="2.5" fill="#0e7490"/>
+    </svg></td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">$1.59</td>
+  <td class="muted">-0.0%<sup class="src-tag">vs 30D · on-demand</sup></td>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#0e7490" stroke-width="1.5" points="4.0,11.9 5.2,11.9 6.3,11.9 7.5,11.9 8.7,11.9 9.9,11.9 11.0,11.9 12.2,11.9 13.4,11.9 14.5,11.9 15.7,11.9 16.9,11.9 18.1,11.9 19.2,11.9 20.4,11.9 21.6,11.9 22.7,11.9 23.9,11.9 25.1,11.9 26.3,11.9 27.4,11.9 28.6,11.9 29.8,11.9 30.9,11.9 32.1,36.0 33.3,36.0 34.5,36.0 35.6,36.0 36.8,20.7 38.0,18.2 39.2,19.2 40.3,18.1 41.5,18.3 42.7,19.1 43.8,19.2 45.0,10.4 46.2,12.3 47.4,19.8 48.5,21.5 49.7,18.3 50.9,22.4 52.0,4.0 53.2,18.3 54.4,17.8 55.6,17.3 56.7,15.8 57.9,17.3 59.1,15.2 60.2,8.3 61.4,4.0 62.6,17.3 63.8,10.6 64.9,14.9 66.1,20.7 67.3,15.6 68.4,15.6 69.6,17.3 70.8,17.3 72.0,19.2 73.1,19.2 74.3,22.4 75.5,20.0 76.6,20.3 77.8,20.0 79.0,19.0 80.2,18.1 81.3,9.8 82.5,9.8 83.7,19.0 84.8,15.1 86.0,24.7 87.2,20.7 88.4,17.6 89.5,16.6 90.7,9.8 91.9,9.8 93.1,15.6 94.2,17.3 95.4,10.6 96.6,13.9 97.7,17.3 98.9,15.6 100.1,15.6 101.3,19.0 102.4,9.8 103.6,15.6 104.8,15.6 105.9,11.5 107.1,15.6 108.3,15.6 109.5,18.1 110.6,17.3 111.8,8.1 113.0,17.3 114.1,17.3 115.3,15.6 116.5,10.3 117.7,17.3 118.8,17.3 120.0,17.3 121.2,19.0 122.3,19.0 123.5,10.3 124.7,15.6 125.9,10.3 127.0,13.9 128.2,22.4 129.4,19.0 130.5,19.0 131.7,19.0 132.9,9.0 134.1,8.1 135.2,13.9 136.4,10.3 137.6,19.0 138.7,13.9 139.9,13.9 141.1,19.0 142.3,15.6 143.4,9.8 144.6,9.8 145.8,10.3 146.9,9.8 148.1,10.3 149.3,15.6 150.5,19.0 151.6,9.8 152.8,10.5 154.0,10.5 155.2,15.6 156.3,15.6 157.5,15.6 158.7,15.6 159.8,14.6 161.0,14.6 162.2,15.6 163.4,13.9 164.5,13.0 165.7,22.4 166.9,16.6 168.0,15.6 169.2,15.6 170.4,10.3 171.6,22.4 172.7,13.0 173.9,13.9 175.1,13.9 176.2,15.6 177.4,13.9 178.6,13.9 179.8,13.2 180.9,4.0 182.1,13.9 183.3,13.2 184.4,14.9 185.6,14.9 186.8,4.0 188.0,13.2 189.1,22.4 190.3,4.0 191.5,13.0 192.6,14.6 193.8,22.0 195.0,9.8 196.2,19.8 197.3,26.6 198.5,12.7 199.7,12.2 200.8,15.1 202.0,22.4 203.2,27.4 204.4,22.4 205.5,15.6 206.7,15.6 207.9,16.3 209.1,19.0 210.2,9.8 211.4,29.1 212.6,24.1 213.7,21.5 214.9,22.3 216.1,27.4 217.3,22.4 218.4,24.9 219.6,20.9 220.8,28.8 221.9,17.3 223.1,29.1 224.3,26.1 225.5,21.7 226.6,20.0 227.8,21.3 229.0,20.0 230.1,24.9 231.3,26.1 232.5,25.2 233.7,28.8 234.8,28.0 236.0,22.4"/>
+      <circle cx="236.0" cy="22.4" r="2.5" fill="#0e7490"/>
+    </svg></td>
+  <td class="muted" style="font-size:11px;">257d · 02-11→11-05</td>
+</tr>
+<tr>
+  <th>L40S</th>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#0e7490" stroke-width="1.5" points="4.0,10.5 4.9,10.5 5.8,10.5 6.7,10.5 7.6,10.5 8.5,10.5 9.4,10.5 10.3,10.5 11.2,10.5 12.2,10.5 13.1,10.5 14.0,10.5 14.9,10.5 15.8,10.5 16.7,10.5 17.6,10.5 18.5,10.5 19.4,10.5 20.3,10.5 21.2,10.5 22.1,10.5 23.0,10.5 23.9,10.5 24.8,10.5 25.8,16.8 26.7,16.8 27.6,16.8 28.5,16.8 29.4,4.0 30.3,16.8 31.2,4.0 32.1,16.8 33.0,4.0 33.9,16.8 34.8,16.8 35.7,4.0 36.6,16.8 37.5,16.8 38.4,16.8 39.3,4.0 40.2,4.0 41.2,4.0 42.1,16.8 43.0,4.0 43.9,16.8 44.8,4.0 45.7,16.8 46.6,16.8 47.5,4.0 48.4,4.0 49.3,16.8 50.2,16.8 51.1,4.0 52.0,16.8 52.9,16.8 53.8,4.0 54.8,16.8 55.7,16.8 56.6,4.0 57.5,16.8 58.4,16.8 59.3,16.8 60.2,4.0 61.1,16.8 62.0,4.0 62.9,16.8 63.8,4.0 64.7,16.8 65.6,16.8 66.5,16.8 67.4,16.8 68.3,16.8 69.2,16.8 70.2,16.8 71.1,4.0 72.0,4.0 72.9,16.8 73.8,16.8 74.7,16.8 75.6,16.8 76.5,4.0 77.4,16.8 78.3,4.0 79.2,16.8 80.1,16.8 81.0,16.8 81.9,29.5 82.8,35.1 83.8,35.1 84.7,35.1 85.6,35.1 86.5,35.1 87.4,35.1 88.3,35.1 89.2,35.1 90.1,35.1 91.0,36.0 91.9,35.1 92.8,35.1 93.7,35.1 94.6,35.1 95.5,35.1 96.4,35.1 97.3,35.1 98.2,35.1 99.2,35.1 100.1,35.1 101.0,34.1 101.9,35.1 102.8,34.1 103.7,34.1 104.6,35.1 105.5,35.1 106.4,35.1 107.3,35.1 108.2,35.1 109.1,35.1 110.0,35.1 110.9,35.1 111.8,35.1 112.8,35.1 113.7,35.1 114.6,35.1 115.5,35.1 116.4,35.1 117.3,34.1 118.2,35.1 119.1,32.1 120.0,32.1 120.9,32.1 121.8,32.1 122.7,32.1 123.6,30.0 124.5,32.1 125.4,32.1 126.3,32.1 127.2,32.1 128.2,32.1 129.1,32.1 130.0,32.1 130.9,32.1 131.8,32.1 132.7,32.1 133.6,32.1 134.5,32.1 135.4,32.1 136.3,32.1 137.2,32.1 138.1,32.1 139.0,32.1 139.9,32.1 140.8,32.1 141.8,32.1 142.7,32.1 143.6,32.1 144.5,32.1 145.4,32.1 146.3,32.1 147.2,32.1 148.1,32.1 149.0,32.1 149.9,32.1 150.8,32.1 151.7,32.1 152.6,32.1 153.5,32.1 154.4,32.1 155.3,32.1 156.2,32.1 157.2,32.1 158.1,32.1 159.0,32.1 159.9,32.1 160.8,32.1 161.7,32.1 162.6,32.1 163.5,32.1 164.4,32.1 165.3,32.1 166.2,32.1 167.1,32.1 168.0,32.1 168.9,32.1 169.8,32.1 170.8,32.1 171.7,32.1 172.6,32.1 173.5,32.1 174.4,32.1 175.3,32.1 176.2,32.1 177.1,32.1 178.0,32.1 178.9,32.1 179.8,32.1 180.7,32.1 181.6,32.1 182.5,32.1 183.4,32.1 184.3,32.1 185.2,32.1 186.2,29.7 187.1,29.7 188.0,29.7 188.9,29.7 189.8,29.7 190.7,29.7 191.6,29.7 192.5,29.7 193.4,29.7 194.3,29.7 195.2,29.7 196.1,29.7 197.0,29.7 197.9,29.7 198.8,29.7 199.8,29.7 200.7,32.3 201.6,15.8 202.5,15.8 203.4,15.8 204.3,15.8 205.2,15.8 206.1,15.8 207.0,15.8 207.9,15.8 208.8,15.8 209.7,15.8 210.6,15.8 211.5,15.8 212.4,15.8 213.3,15.8 214.2,15.8 215.2,15.8 216.1,15.8 217.0,15.8 217.9,15.8 218.8,15.8 219.7,5.2 220.6,15.8 221.5,15.8 222.4,6.3 223.3,15.8 224.2,6.3 225.1,25.3 226.0,25.3 226.9,32.3 227.8,32.3 228.8,32.3 229.7,32.3 230.6,32.3 231.5,32.3 232.4,32.3 233.3,25.3 234.2,25.3 235.1,25.3 236.0,32.3"/>
+      <circle cx="236.0" cy="32.3" r="2.5" fill="#0e7490"/>
+    </svg></td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">$0.94</td>
+  <td class="down">-27.4%<sup class="src-tag">vs 30D · on-demand</sup></td>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#b91c1c" stroke-width="1.5" points="4.0,28.8 5.1,28.8 6.2,28.8 7.2,28.8 8.3,28.8 9.4,28.8 10.5,28.8 11.6,28.8 12.6,28.8 13.7,28.8 14.8,28.8 15.9,28.8 16.9,28.8 18.0,28.8 19.1,28.8 20.2,28.8 21.3,28.8 22.3,36.0 23.4,36.0 24.5,36.0 25.6,36.0 26.7,36.0 27.7,36.0 28.8,36.0 29.9,36.0 31.0,36.0 32.1,36.0 33.1,36.0 34.2,36.0 35.3,36.0 36.4,36.0 37.5,36.0 38.5,36.0 39.6,36.0 40.7,36.0 41.8,36.0 42.8,36.0 43.9,36.0 45.0,36.0 46.1,27.5 47.2,27.5 48.2,27.5 49.3,27.5 50.4,27.5 51.5,11.2 52.6,19.5 53.6,19.5 54.7,19.5 55.8,17.9 56.9,17.9 58.0,17.9 59.0,15.4 60.1,17.9 61.2,17.5 62.3,11.2 63.3,14.7 64.4,17.1 65.5,11.2 66.6,4.0 67.7,11.7 68.7,4.0 69.8,8.5 70.9,4.0 72.0,4.0 73.1,11.7 74.1,4.0 75.2,4.0 76.3,4.0 77.4,4.0 78.5,4.0 79.5,5.0 80.6,4.0 81.7,5.0 82.8,5.0 83.9,12.3 84.9,12.3 86.0,19.5 87.1,5.0 88.2,12.3 89.2,5.0 90.3,13.5 91.4,5.0 92.5,5.0 93.6,11.7 94.6,19.5 95.7,4.0 96.8,5.0 97.9,4.5 99.0,4.5 100.0,12.3 101.1,12.3 102.2,4.0 103.3,11.7 104.4,4.0 105.4,4.0 106.5,4.0 107.6,4.0 108.7,4.0 109.7,4.0 110.8,4.0 111.9,11.7 113.0,4.0 114.1,4.0 115.1,11.7 116.2,11.7 117.3,11.7 118.4,11.7 119.5,4.0 120.5,4.0 121.6,4.0 122.7,11.7 123.8,4.5 124.9,11.7 125.9,11.7 127.0,11.7 128.1,11.7 129.2,11.7 130.3,11.7 131.3,11.7 132.4,11.7 133.5,11.7 134.6,11.7 135.6,4.0 136.7,4.5 137.8,11.7 138.9,11.7 140.0,11.7 141.0,11.7 142.1,19.5 143.2,11.7 144.3,4.0 145.4,4.5 146.4,11.7 147.5,5.0 148.6,11.7 149.7,4.0 150.8,4.0 151.8,4.0 152.9,4.5 154.0,11.7 155.1,4.0 156.1,4.0 157.2,4.0 158.3,4.0 159.4,4.0 160.5,4.0 161.5,4.0 162.6,4.0 163.7,4.0 164.8,4.0 165.9,4.0 166.9,4.0 168.0,4.0 169.1,4.0 170.2,4.0 171.3,4.0 172.3,4.0 173.4,4.0 174.5,4.0 175.6,4.0 176.7,4.0 177.7,4.0 178.8,4.0 179.9,4.0 181.0,4.0 182.0,4.0 183.1,4.0 184.2,4.0 185.3,4.0 186.4,4.0 187.4,4.5 188.5,4.0 189.6,4.5 190.7,4.0 191.8,4.0 192.8,4.0 193.9,4.0 195.0,4.0 196.1,4.0 197.2,4.5 198.2,4.0 199.3,4.5 200.4,4.0 201.5,4.0 202.5,4.0 203.6,4.5 204.7,4.0 205.8,4.0 206.9,4.0 207.9,4.0 209.0,4.0 210.1,4.0 211.2,4.0 212.3,4.0 213.3,5.0 214.4,27.5 215.5,5.7 216.6,13.6 217.7,23.5 218.7,14.7 219.8,6.2 220.9,19.5 222.0,21.5 223.1,21.5 224.1,19.5 225.2,5.0 226.3,5.0 227.4,27.5 228.4,27.5 229.5,27.5 230.6,25.5 231.7,21.5 232.8,15.5 233.8,27.5 234.9,27.5 236.0,19.1"/>
+      <circle cx="236.0" cy="19.1" r="2.5" fill="#b91c1c"/>
+    </svg></td>
+  <td class="muted" style="font-size:11px;">257d · 02-11→11-05</td>
+</tr>
+<tr>
+  <th>RTX 4090</th>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#b91c1c" stroke-width="1.5" points="4.0,36.0 5.4,36.0 6.7,36.0 8.1,36.0 9.5,36.0 10.9,36.0 12.2,36.0 13.6,36.0 15.0,36.0 16.4,36.0 17.7,36.0 19.1,36.0 20.5,36.0 21.8,36.0 23.2,36.0 24.6,36.0 26.0,36.0 27.3,36.0 28.7,36.0 30.1,36.0 31.5,36.0 32.8,36.0 34.2,36.0 35.6,36.0 36.9,36.0 38.3,36.0 39.7,36.0 41.1,36.0 42.4,36.0 43.8,36.0 45.2,36.0 46.6,36.0 47.9,36.0 49.3,36.0 50.7,36.0 52.0,36.0 53.4,36.0 54.8,36.0 56.2,36.0 57.5,36.0 58.9,36.0 60.3,36.0 61.7,36.0 63.0,36.0 64.4,36.0 65.8,36.0 67.1,36.0 68.5,36.0 69.9,36.0 71.3,36.0 72.6,36.0 74.0,36.0 75.4,36.0 76.8,36.0 78.1,36.0 79.5,36.0 80.9,36.0 82.2,36.0 83.6,36.0 85.0,36.0 86.4,36.0 87.7,36.0 89.1,36.0 90.5,36.0 91.9,36.0 93.2,36.0 94.6,36.0 96.0,36.0 97.3,36.0 98.7,36.0 100.1,36.0 101.5,36.0 102.8,36.0 104.2,36.0 105.6,36.0 107.0,36.0 108.3,36.0 109.7,36.0 111.1,36.0 112.4,36.0 113.8,36.0 115.2,36.0 116.6,36.0 117.9,36.0 119.3,36.0 120.7,36.0 122.1,36.0 123.4,33.9 124.8,33.9 126.2,33.9 127.6,33.9 128.9,33.9 130.3,33.9 131.7,33.9 133.0,33.9 134.4,33.9 135.8,33.9 137.2,33.9 138.5,33.9 139.9,33.9 141.3,33.9 142.7,33.9 144.0,33.9 145.4,33.9 146.8,33.9 148.1,33.9 149.5,33.9 150.9,33.9 152.3,33.9 153.6,33.9 155.0,33.9 156.4,33.9 157.8,33.9 159.1,33.9 160.5,33.9 161.9,33.9 163.2,33.9 164.6,33.9 166.0,33.9 167.4,33.9 168.7,33.9 170.1,33.9 171.5,33.9 172.9,33.9 174.2,33.9 175.6,33.9 177.0,33.9 178.3,33.9 179.7,33.9 181.1,33.9 182.5,33.9 183.8,33.9 185.2,33.9 186.6,33.9 188.0,33.9 189.3,33.9 190.7,16.8 192.1,33.9 193.4,33.9 194.8,16.8 196.2,33.9 197.6,16.8 198.9,33.9 200.3,33.9 201.7,33.9 203.1,33.9 204.4,33.9 205.8,33.9 207.2,27.5 208.5,27.5 209.9,27.5 211.3,27.5 212.7,27.5 214.0,27.5 215.4,27.5 216.8,27.5 218.2,4.0 219.5,27.5 220.9,27.5 222.3,27.5 223.6,27.5 225.0,27.5 226.4,27.5 227.8,27.5 229.1,27.5 230.5,27.5 231.9,27.5 233.3,4.0 234.6,27.5 236.0,27.5"/>
+      <circle cx="236.0" cy="27.5" r="2.5" fill="#b91c1c"/>
+    </svg></td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">$0.33</td>
+  <td class="muted">-2.0%<sup class="src-tag">vs 30D · spot</sup></td>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#b91c1c" stroke-width="1.5" points="4.0,35.5 5.4,32.2 6.7,36.0 8.1,35.0 9.5,35.0 10.8,35.5 12.2,33.9 13.6,35.0 14.9,35.0 16.3,31.0 17.6,31.0 19.0,33.8 20.4,31.0 21.7,31.0 23.1,27.2 24.5,31.7 25.8,27.9 27.2,24.2 28.6,25.3 29.9,22.6 31.3,13.5 32.7,4.0 34.0,12.0 35.4,25.3 36.8,22.1 38.1,23.7 39.5,30.6 40.8,26.6 42.2,29.3 43.6,30.6 44.9,30.6 46.3,30.6 47.7,30.9 49.0,31.9 50.4,33.0 51.8,33.0 53.1,33.0 54.5,33.1 55.9,33.0 57.2,33.0 58.6,32.1 60.0,33.3 61.3,33.1 62.7,33.3 64.0,33.0 65.4,33.0 66.8,32.6 68.1,33.0 69.5,33.0 70.9,32.1 72.2,33.0 73.6,33.0 75.0,33.0 76.3,33.0 77.7,33.0 79.1,33.0 80.4,33.0 81.8,33.0 83.2,33.1 84.5,33.0 85.9,33.0 87.2,33.0 88.6,33.0 90.0,33.0 91.3,33.0 92.7,33.0 94.1,33.1 95.4,33.0 96.8,33.0 98.2,33.0 99.5,33.1 100.9,33.0 102.3,33.0 103.6,33.0 105.0,33.0 106.4,33.0 107.7,33.0 109.1,31.1 110.4,33.0 111.8,33.0 113.2,33.0 114.5,33.0 115.9,33.0 117.3,30.8 118.6,33.0 120.0,32.0 121.4,33.0 122.7,33.0 124.1,33.0 125.5,33.0 126.8,33.0 128.2,33.0 129.6,33.0 130.9,33.0 132.3,33.0 133.6,33.0 135.0,33.1 136.4,33.3 137.7,33.3 139.1,33.0 140.5,34.9 141.8,33.0 143.2,33.0 144.6,33.0 145.9,33.0 147.3,32.0 148.7,33.0 150.0,33.0 151.4,32.3 152.8,32.1 154.1,33.0 155.5,33.0 156.8,30.8 158.2,33.0 159.6,33.0 160.9,33.0 162.3,33.0 163.7,33.0 165.0,32.0 166.4,33.0 167.8,33.0 169.1,33.0 170.5,33.0 171.9,33.0 173.2,27.8 174.6,32.5 176.0,32.0 177.3,30.8 178.7,33.0 180.0,33.0 181.4,20.0 182.8,29.5 184.1,31.6 185.5,30.8 186.9,30.6 188.2,33.0 189.6,33.5 191.0,31.6 192.3,33.0 193.7,31.1 195.1,33.0 196.4,32.1 197.8,33.0 199.2,33.0 200.5,32.2 201.9,32.1 203.2,33.0 204.6,33.0 206.0,30.6 207.3,32.5 208.7,30.6 210.1,29.3 211.4,25.7 212.8,21.6 214.2,29.5 215.5,30.4 216.9,30.6 218.3,21.6 219.6,23.7 221.0,23.7 222.4,26.3 223.7,28.4 225.1,31.1 226.4,25.3 227.8,26.1 229.2,25.0 230.5,25.3 231.9,28.0 233.3,31.1 234.6,24.5 236.0,33.3"/>
+      <circle cx="236.0" cy="33.3" r="2.5" fill="#b91c1c"/>
+    </svg></td>
+  <td class="muted" style="font-size:11px;">171d · 05-08→11-05</td>
+</tr>
+<tr>
+  <th>RTX 5090</th>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#b91c1c" stroke-width="1.5" points="4.0,36.0 5.4,36.0 6.7,36.0 8.1,36.0 9.5,36.0 10.9,36.0 12.2,36.0 13.6,36.0 15.0,36.0 16.4,36.0 17.7,36.0 19.1,36.0 20.5,36.0 21.8,36.0 23.2,36.0 24.6,36.0 26.0,36.0 27.3,36.0 28.7,36.0 30.1,36.0 31.5,36.0 32.8,36.0 34.2,36.0 35.6,36.0 36.9,36.0 38.3,36.0 39.7,36.0 41.1,36.0 42.4,36.0 43.8,36.0 45.2,36.0 46.6,36.0 47.9,36.0 49.3,36.0 50.7,36.0 52.0,36.0 53.4,36.0 54.8,36.0 56.2,36.0 57.5,36.0 58.9,36.0 60.3,36.0 61.7,36.0 63.0,36.0 64.4,36.0 65.8,36.0 67.1,36.0 68.5,36.0 69.9,36.0 71.3,36.0 72.6,36.0 74.0,36.0 75.4,36.0 76.8,36.0 78.1,36.0 79.5,36.0 80.9,36.0 82.2,36.0 83.6,36.0 85.0,36.0 86.4,36.0 87.7,36.0 89.1,36.0 90.5,36.0 91.9,36.0 93.2,36.0 94.6,36.0 96.0,36.0 97.3,36.0 98.7,36.0 100.1,36.0 101.5,36.0 102.8,36.0 104.2,36.0 105.6,36.0 107.0,36.0 108.3,36.0 109.7,36.0 111.1,36.0 112.4,36.0 113.8,36.0 115.2,36.0 116.6,36.0 117.9,36.0 119.3,36.0 120.7,36.0 122.1,36.0 123.4,36.0 124.8,36.0 126.2,36.0 127.6,36.0 128.9,36.0 130.3,36.0 131.7,36.0 133.0,36.0 134.4,36.0 135.8,36.0 137.2,36.0 138.5,36.0 139.9,36.0 141.3,36.0 142.7,36.0 144.0,36.0 145.4,36.0 146.8,36.0 148.1,36.0 149.5,36.0 150.9,36.0 152.3,36.0 153.6,36.0 155.0,36.0 156.4,36.0 157.8,36.0 159.1,36.0 160.5,36.0 161.9,36.0 163.2,36.0 164.6,36.0 166.0,36.0 167.4,36.0 168.7,36.0 170.1,36.0 171.5,36.0 172.9,22.3 174.2,36.0 175.6,36.0 177.0,36.0 178.3,36.0 179.7,36.0 181.1,36.0 182.5,36.0 183.8,36.0 185.2,22.3 186.6,22.3 188.0,36.0 189.3,36.0 190.7,36.0 192.1,22.3 193.4,36.0 194.8,36.0 196.2,36.0 197.6,36.0 198.9,22.3 200.3,36.0 201.7,36.0 203.1,36.0 204.4,36.0 205.8,36.0 207.2,26.9 208.5,26.9 209.9,26.9 211.3,26.9 212.7,4.0 214.0,26.9 215.4,26.9 216.8,26.9 218.2,4.0 219.5,4.0 220.9,26.9 222.3,26.9 223.6,26.9 225.0,26.9 226.4,26.9 227.8,4.0 229.1,26.9 230.5,26.9 231.9,26.9 233.3,4.0 234.6,4.0 236.0,4.0"/>
+      <circle cx="236.0" cy="4.0" r="2.5" fill="#b91c1c"/>
+    </svg></td>
+  <td class="muted" style="font-variant-numeric:tabular-nums;">$0.70</td>
+  <td class="muted">+1.4%<sup class="src-tag">vs 30D · spot</sup></td>
+  <td><svg width="240" height="40" viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+      <polyline fill="none" stroke="#b91c1c" stroke-width="1.5" points="4.0,33.2 5.4,33.0 6.7,33.3 8.1,33.0 9.5,27.2 10.8,27.8 12.2,25.4 13.6,25.4 14.9,17.4 16.3,23.7 17.6,25.4 19.0,30.1 20.4,24.6 21.7,18.2 23.1,24.3 24.5,21.7 25.8,23.7 27.2,25.4 28.6,25.4 29.9,22.1 31.3,10.8 32.7,4.0 34.0,17.3 35.4,15.8 36.8,23.4 38.1,23.7 39.5,21.2 40.8,20.8 42.2,20.1 43.6,21.5 44.9,24.7 46.3,28.7 47.7,29.1 49.0,30.6 50.4,28.9 51.8,32.3 53.1,32.4 54.5,33.0 55.9,27.4 57.2,34.8 58.6,32.2 60.0,32.3 61.3,33.2 62.7,32.7 64.0,32.7 65.4,32.3 66.8,35.5 68.1,31.2 69.5,34.4 70.9,32.1 72.2,32.3 73.6,34.9 75.0,34.9 76.3,34.0 77.7,32.3 79.1,30.6 80.4,28.3 81.8,32.3 83.2,34.9 84.5,34.9 85.9,31.8 87.2,32.3 88.6,32.8 90.0,31.3 91.3,32.3 92.7,34.9 94.1,34.4 95.4,34.4 96.8,35.9 98.2,29.3 99.5,35.4 100.9,35.7 102.3,34.5 103.6,36.0 105.0,29.0 106.4,31.6 107.7,31.4 109.1,31.6 110.4,29.3 111.8,31.6 113.2,32.4 114.5,29.3 115.9,34.9 117.3,34.4 118.6,29.7 120.0,35.7 121.4,29.3 122.7,29.3 124.1,28.6 125.5,28.6 126.8,29.4 128.2,29.6 129.6,30.3 130.9,24.8 132.3,25.3 133.6,26.9 135.0,24.8 136.4,25.3 137.7,24.8 139.1,28.6 140.5,31.2 141.8,31.0 143.2,25.1 144.6,25.1 145.9,24.8 147.3,25.1 148.7,32.3 150.0,28.9 151.4,27.9 152.8,31.3 154.1,27.8 155.5,25.1 156.8,24.8 158.2,31.3 159.6,30.6 160.9,27.2 162.3,25.3 163.7,29.6 165.0,28.6 166.4,30.0 167.8,25.8 169.1,26.9 170.5,25.4 171.9,24.8 173.2,24.8 174.6,28.9 176.0,28.9 177.3,24.8 178.7,27.2 180.0,26.0 181.4,28.9 182.8,27.2 184.1,26.4 185.5,28.9 186.9,26.9 188.2,28.9 189.6,27.9 191.0,25.4 192.3,31.9 193.7,25.1 195.1,27.2 196.4,28.9 197.8,30.6 199.2,26.9 200.5,29.2 201.9,27.2 203.2,24.8 204.6,28.9 206.0,31.1 207.3,30.7 208.7,29.8 210.1,28.8 211.4,29.2 212.8,22.0 214.2,27.0 215.5,22.9 216.9,24.4 218.3,25.4 219.6,22.0 221.0,22.0 222.4,25.4 223.7,28.5 225.1,25.4 226.4,27.2 227.8,28.9 229.2,25.4 230.5,27.5 231.9,27.6 233.3,26.0 234.6,29.7 236.0,24.6"/>
+      <circle cx="236.0" cy="24.6" r="2.5" fill="#b91c1c"/>
+    </svg></td>
+  <td class="muted" style="font-size:11px;">171d · 05-08→11-05</td>
+</tr></tbody>
+  </table>
+  <p class="hint">
+    线条颜色：<span style="color:#b91c1c;font-weight:600;">红</span> = 上涨（紧缺）·
+    <span style="color:#0e7490;font-weight:600;">青</span> = 下跌（软化）·
+    <span style="color:#1f3a5f;font-weight:600;">蓝</span> = 持平。
+    机构 provider = Lambda / Crusoe / Nebius / RunPod / CoreWeave / Hyperstack / Paperspace / AWS / Azure / GCP / Oracle。
+  </p>
+</section>
+
+<footer>
+  数据来源:
+  <a href="https://console.vast.ai/api/v0/bundles/">Vast.ai 公开 API</a> ·
+  <a href="https://api.runpod.io/graphql">RunPod GraphQL</a> ·
+  <a href="https://lambda.ai/service/gpu-cloud">Lambda Labs</a> ·
+  <a href="https://crusoe.ai/cloud/pricing/">Crusoe</a> ·
+  <a href="https://nebius.com/prices">Nebius</a> ·
+  <a href="https://sfcompute.com/">SF Compute</a> ·
+  <code>data/observations.csv</code> 每日累积，
+  <a href="https://github.com/cherielilili/gpu-pricing-tracker">repo on GitHub</a>。
+</footer>
+
+</body></html>
