@@ -57,7 +57,7 @@ GPU_LABEL = {
     "RTX_4090": "RTX 4090",
 }
 
-PROVIDERS = ["lambda", "crusoe", "nebius", "runpod", "vast.ai", "sfcompute"]
+PROVIDERS = ["lambda", "crusoe", "nebius", "runpod", "vast.ai", "sfcompute", "runcrate"]
 PROVIDER_LABEL = {
     "lambda": "Lambda",
     "crusoe": "Crusoe",
@@ -65,6 +65,7 @@ PROVIDER_LABEL = {
     "runpod": "RunPod",
     "vast.ai": "Vast.ai",
     "sfcompute": "SF Compute",
+    "runcrate": "Runcrate",
 }
 
 # Investment-signal hint per GPU (concise — full signal layer is P4).
@@ -583,6 +584,7 @@ def main() -> int:
   <a href="https://crusoe.ai/cloud/pricing/">Crusoe</a> ·
   <a href="https://nebius.com/prices">Nebius</a> ·
   <a href="https://sfcompute.com/">SF Compute</a> ·
+  <a href="https://www.runcrate.ai/api/gpu-pricing">Runcrate</a> ·
   <code>data/observations.csv</code> 每日累积，
   <a href="https://github.com/cherielilili/gpu-pricing-tracker">repo on GitHub</a>。
 </footer>
