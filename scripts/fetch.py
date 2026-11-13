@@ -77,6 +77,7 @@ def main() -> int:
     from crusoe_fetcher import fetch as fetch_crusoe
     from nebius_fetcher import fetch as fetch_nebius
     from sfcompute_fetcher import fetch as fetch_sfcompute
+    from runcrate_fetcher import fetch as fetch_runcrate
 
     fetchers = [
         ("vast", fetch_vast),
@@ -85,6 +86,7 @@ def main() -> int:
         ("crusoe", fetch_crusoe),
         ("nebius", fetch_nebius),
         ("sfcompute", fetch_sfcompute),
+        ("runcrate", fetch_runcrate),
     ]
 
     existing = load_existing()
